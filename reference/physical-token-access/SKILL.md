@@ -38,19 +38,10 @@ lsusb -d 2e8a:000f
   device. If guest `lsusb` cannot see it, detach and reattach it from the VM's
   USB device menu, then check guest `lsusb` again. Do not start flash retries
   while the guest cannot enumerate the Pico.
-- **Warning: restarting pcscd or running the helper aborts every live PC/SC
-  campaign on every token, including other sessions' runs.** First check
-  `pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'` and the
-  HANDOFF. If anything is running, do not touch pcscd; wait or use another path.
-- If `lsusb` sees the running device but PC/SC does not, and no campaign is
-  running, check pcscd and reader permissions. Restart the service (reload
-  fails when it is inactive), then run the bounded reader scan again.
-- If the configured helper is available and no campaign is running, run it
-  yourself with elevated execution, exactly as
-  `sudo -n /usr/local/sbin/pico2-pcsc-reader` (no prefix or extra arguments;
-  see `AGENTS.md` sudo exceptions). It grants pcscd access to the current USB
-  device node and then **always** runs `systemctl restart pcscd.service`. Replugging changes the bus/device number, so an ACL
-  applied to an old `/dev/bus/usb/...` path may no longer help.
+- Follow the live-run check and sudo exception in [AGENTS.md](../../AGENTS.md).
+  When USB sees a token and PC/SC does not, allow for hotplug before using the
+  approved helper. Replugging changes the USB device node, so an ACL on an
+  older node may no longer help.
 - If PC/SC lists only `Virtual PCD` readers, the physical Pico is still
   unavailable. Do not treat VPCD visibility as hardware validation. Never use
   `pcsc_scan` for physical readers; it has previously remained running at high
@@ -67,8 +58,7 @@ lsusb -d 2e8a:000f
 
 - Use `./tools/flash <image.uf2>` or the repository cycle wrapper. They can
   request BOOTSEL through the firmware reset interface or CDC fallback when
-  USB is accessible. Require both architecture builds to pass before a normal
-  shared-source flash.
+  USB is accessible. Require a warning-free ARM build before flashing.
 - For manual recovery, hold BOOTSEL while connecting the board, then confirm
   `boot type: bootsel` with picotool before loading firmware.
 - Do not infer BOOTSEL from PC/SC state: BOOTSEL is a bootloader mode, while a
@@ -80,7 +70,7 @@ lsusb -d 2e8a:000f
 
 ## Choosing and keeping a token
 
-Several Pico 2 tokens may be attached at once (four at the time of writing).
+Several Pico 2 tokens may be attached at once.
 Preferred use:
 
 1. **Identify first.** Before hardware work, enumerate the attached tokens and

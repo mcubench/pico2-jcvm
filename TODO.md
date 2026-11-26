@@ -1,10 +1,12 @@
 # Project TODO
 
-Updated 2026-11-21. Follow [AGENTS.md](AGENTS.md) and [SPEC.md](SPEC.md) for
+Updated 2026-11-26. Follow [AGENTS.md](AGENTS.md) and [SPEC.md](SPEC.md) for
 scope, fixtures and acceptance. Record evidence in [progress.md](progress.md).
 Detailed cases and earlier outcomes are in the [previous backlog](.agent/archive/2026-11-21-backlog-compaction/TODO.md)
 and its [archive index](.agent/archive/2026-11-21-backlog-compaction/README.md).
 Open acceptance criteria in the archived backlog still apply where relevant.
+See the [task dispositions](.agent/archive/2026-11-26-task-dispositions.md)
+for completed substeps and their evidence.
 Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 [external requests](.agent/EXT_REQUESTS.md) for pending external work.
 
@@ -14,6 +16,8 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 - Finish CAPIN-01 linkage and recovery acceptance and the remaining CAPIN-05/06 negative fixtures. Verify the CAPIN-07 LOAD checks on ARM hardware.
 - Verify RAM-pressure heap reclamation on EE11 with the full symmetric KAT and GP cleanup. Capture APDU flash traffic and use the diagnostic heap log if failures recur. See `20261121-2154-ram-pressure-reclaim`.
 - Schedule BOOTSEL and power-loss acceptance when an identified board is available.
+- Finish external ExtendedLength and KeyPair validation and the supplemental
+  PQC campaign. Use the active request IDs in [EXT_REQUESTS.md](.agent/EXT_REQUESTS.md).
 
 ## CAP and interpreter safety
 
@@ -27,7 +31,6 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### CAPIN-04
 
-- [x] Verify the 64-frame boundary and following APDU on VPCD. The RMI unit suite also injects frame allocation failure and checks that caller state survives. See `20261121-2201-frame-limit-recovery`.
 - [ ] Verify the frame boundary on hardware and exercise injected method-entry allocation failure through the full APDU path (RV-20261106-43).
 
 ### CAPIN-05
@@ -40,7 +43,6 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### CAPIN-07
 
-- [x] Move import-independent Class and Export reference checks to LOAD. Superclass, vtable, interface index, and Export rejection passed in VPCD. A valid Descriptor-free CAP and the SIO lifecycle passed. See `20261121-2157-capin07-load-class-checks`.
 - [ ] Verify physical LOAD rejection and recovery. Resolve the full-record bound in `resolveClassref` with the SIO SensitiveResult regression covered.
 
 ### CAPIN-08
@@ -116,8 +118,14 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 - [ ] Remove the remaining built-in Java method bodies under INV-03 while preserving CAP linkage and installed object layouts. The ARM max_crypto ROM inventory after the native JCSystem transaction step has 449 concrete Java method bodies. Convert API behavior to C++ and verify the linked firmware ROM has no executable Java API bodies.
 
 - [ ] Audit advertised API capabilities against actual behavior and tests. Finish physical KATs for newly enabled crypto and deferred RSA/RSA-CRT 4096 validation. See progress for committed implementations and [external requests](.agent/EXT_REQUESTS.md) for XDH ABI inputs.
-- [x] Verify the 5 KiB and multipart digest cases and per-APDU flash traffic on a normal physical image. See step `20261121-2138-ee11-streaming-digest`.
-- Extended APDUs, T=1 WTX and logical channels remain excluded under INV-09. PROFILE-02 is deferred unless product scope changes.
+- [ ] Finish external ExtendedLength validation (WIN-ECTESTER-39FD4199-20261126).
+  The implementation landed in `aa65ea94` and `39fd4199`. INV-09 retains the
+  T=1 WTX and logical-channel exclusions. PROFILE-02 stays deferred.
+- [ ] Review remaining ECTester cases (309/413 on `05fb3d0b`), including
+  compressed P-224. See `20261126-1843-ectester-full-05fb3d0b`.
+- [ ] Finish ML-DSA physical validation on 07E7/F42D. DHKEM and named-parameter
+  XDH remain unavailable. For XDH, SDK exports supply the ABI and the reference
+  CAP and expected outputs remain outstanding (CRYPTO-XDH-ABI-20261121).
 
 ### CTX-01
 
@@ -135,6 +143,8 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 ### GP-01
 
 - [ ] CAP-REINSTALL-01/02/03: finish physical stale-route, late DELETE failure and changed-version replacement checks. Verify fresh lookup and failed/successful APDUs around reinstall and cold boot.
+- [ ] Confirm the GP DELETE watchdog fix on Windows. See archived packaging
+  evidence under `20261124-2235-gp-delete-handoff` and package `6d3bb526`.
 - [ ] Finish physical GET DATA BER-TLV/value response coverage and cold-power registry checks. Preserve pagination and exact AID/continuation assertions.
 
 ## Host and integration
@@ -145,6 +155,10 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### HOST-01
 
+- [ ] Investigate the Windows RSA-CRT-2048 `6F00`. Scoped simulator and EE11
+  replays did not reproduce it (`35f3459b`). Fuller-store resource exhaustion
+  remains a hypothesis. Keep Windows RSA-CRT-4096 confirmation for `d65eb278`
+  and the unsupported RSA-4096 KeyPair rows open.
 - [ ] Own remaining CCID stalls and reader loss. Correlate exact-reader PC/SC state, USB visibility, VM return, filesystem sync and CCID submission/completion before assigning a cause.
 
 ### LONGOP-01
@@ -165,7 +179,12 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### AC-02
 
-- [ ] Finish the plan's three consecutive clean-flash physical integration passes with exact image and token evidence. Carry forward the current ARM-only scope and warning gate.
+- [ ] Finish three consecutive clean-flash ARM integration passes, with the
+  warning gate and exact image and token evidence. Verify Linux and Windows
+  PC/SC ISD listing, baseline CAP installation and selection, a complete support
+  run without transport errors, CSV agreement with the manifest and jCardSim,
+  and survival and repeatability after physical power removal. See the
+  [original AC1–AC5 criteria](docs/archive/plan.md).
 
 ## Open review acceptance
 
@@ -203,7 +222,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-37 — Make EC cofactor requirements algorithm-specific.** P2; owner: API-03 / PROFILE-01. Allow fully populated EC keys and ECDSA to initialize without optional K; preserve DHC's required-cofactor check and R28's validation of inconsistent supplied K. Cover generated/manual public and private keys, missing/correct/invalid K and non-DHC agreement. [R37](docs/archive/review_20261106.md#r37--p2-ec-initialization-and-ecdsa-require-an-optional-cofactor)
 
-- [ ] **RV-20261106-38 — Honor or reject preinitialized key-pair parameters explicitly.** P2; owner: API-03 / PROFILE-01. Preserve supported RSA exponents and EC domains rather than silently replacing them. Test default/nondefault/invalid exponents and supported/invalid/unsupported EC domains, parameter readback, pair consistency and repeated generation. A named-curve restriction may reject unsupported domains explicitly. [R38](docs/archive/review_20261106.md#r38--p2-key-pair-generation-silently-replaces-preinitialized-parameters)
+- [ ] **RV-20261106-38 — Honor or reject preinitialized key-pair parameters explicitly.** P2; owner: API-03 / PROFILE-01. Existing-key constructors and preloaded parameter handling landed in `e0614fc3` and `107d7663`. Confirm externally and finish the parameter matrix. Test default/nondefault/invalid exponents and supported/invalid/unsupported EC domains, parameter readback, pair consistency and repeated generation. A named-curve restriction may reject unsupported domains explicitly. [R38](docs/archive/review_20261106.md#r38--p2-key-pair-generation-silently-replaces-preinitialized-parameters)
 
 - [ ] **RV-20261106-39 — Reset CBC MAC IV to zero after finalization.** P2; owner: API-03 / PROFILE-01. Cover sign, successful/false verify, multipart input and explicit reinit on the same object after a nonzero-IV init. Compare first output with that IV and next output with an independent zero-IV reference; default-zero repeated-message tests are insufficient. [R39](docs/archive/review_20261106.md#r39--p2-cbc-mac-finalization-preserves-the-nonzero-iv-for-the-next-message)
 
@@ -256,6 +275,11 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 - [ ] **RV-20261106-30 — Prevent exception diagnostics from reading arbitrary field kinds as short.** P2; owner: HARD-01 / PROFILE-01 / CTX-01. Exercise fresh-boot hardware throws of custom exceptions with byte/int/reference/short first fields, exact/superclass catches and a following successful APDU; trace-budget state must not alter behavior. [R30](docs/archive/review_20261106.md#r30--p2-hardware-exception-diagnostics-assume-every-exceptions-first-field-is-a-short)
 
 ## Performance
+
+- [ ] Before changing dispatch or branch checks, reprofile the XOR control
+  and interpreter fetch/decode phases. See the
+  [November measurements](docs/archive/jcvm-bytecode-performance-20261122.md)
+  and [follow-up](docs/archive/review_VMperf_second_pass_20261122.md).
 
 - [ ] **PERF-20261110-05 — Constant-time heap handle lookup.** P2; owner: (2026-11-20: also a RAM item — each `std::list` slot costs a 24 B node per handle ever allocated; an indexed container would save ~16 B per slot, relevant to the option-1 OOM margin.)
   HARD-01. `Heap::SharedStorage` uses `List` (`std::list`) whose `at()` walks

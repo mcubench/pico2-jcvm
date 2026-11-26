@@ -116,7 +116,7 @@ PICO_BUILD_JOBS=2 ./tools/build arm --profile baseline
 ```
 The wrapper locks `build/.tools-build.lock` and checks hashes for API, ROM-mask, and support-profile inputs. `perf_tips.md` contains historical timing samples, not guaranteed build times or evidence that more parallel jobs are faster.
 
-Source: [tools/build:44](../../tools/build#L44); [tools/build:58](../../tools/build#L58); [perf_tips.md:258](../../perf_tips.md#L258).
+Source: [tools/build:44](../../tools/build#L44); [tools/build:58](../../tools/build#L58); [perf_tips.md:258](development-performance.md).
 
 ## Watchdog, scheduling, and recovery
 
@@ -550,7 +550,7 @@ const uint32_t elapsed_us = static_cast<uint32_t>(time_us_32() - start);
 ```
 A physical host-timed SHA-256 probe recorded 1,680.2 ms baseline and 1,979.5 ms for 50 calls, estimating **5.99 ms per 256-byte doFinal** after subtraction. That includes PC/SC and VM overhead and is not raw RP2350 SHA engine throughput; `perf_tips.md` build timings are a different measurement category.
 
-Source: [progress.md:17874](../../progress.md#L17874); [perf_tips.md:7](../../perf_tips.md#L7).
+Source: [progress.md:17874](../../progress.md#L17874); [perf_tips.md:7](development-performance.md).
 
 ## Data ownership, secrets, and hardware services
 
@@ -673,7 +673,7 @@ Source: [.agent/HANDOFF.md:23](../../.agent/HANDOFF.md#L23); [.agent/HANDOFF.md:
 | [Firmware architecture](../FIRMWARE_JCVM_ARCHITECTURE.md) | Runtime/transport/VM/platform boundaries; confirm numeric limits against current source. |
 | [Flash migration](../flash-layout-migration.md) | Layout evolution and preservation constraints. |
 | [Supported profile](../supported-profile.md) | Scope of Java Card compatibility and remaining acceptance work. |
-| [Development timing](../../perf_tips.md) | Feedback-loop measurement ideas and historical host timing samples. |
+| [Development timing](development-performance.md) | Feedback-loop measurement ideas and historical host timing samples. |
 | [Board notes](../../reference/board.md), [silicon notes](../../reference/silicon.md) | Broader design ideas; not all are implemented or validated here, and older destructive/toolchain examples are not the repository workflow. |
 | [AGENTS instructions](../../AGENTS.md), [continuity](../../.agent/SESSION_CONTINUITY.md) | Build wrappers, host access, hardware safeguards, and normal collaboration rules. |
 

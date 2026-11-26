@@ -3,7 +3,7 @@
 Reusable diagnoses and recovery procedures. See [HANDOFF](HANDOFF.md) for last
 observations, [TODO](../TODO.md) for unfinished work and [progress](../progress.md)
 for evidence. The [November incident archive](archive/2026-11-21-backlog-compaction/QKB.md)
-preserves the detailed records. The [older index](QKB_INDEX.md) covers October.
+preserves the detailed records. For historical evidence, search the [archived catalog](archive/QKB_INDEX.md) by issue or evidence ID.
 
 ## Physical token roster
 

@@ -34389,3 +34389,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: All four requested removals are reflected in the README.
 - Decision: Keep the profile qualifier in the native cryptography overview.
 - Artifacts/logs: none.
+
+## 2026-11-26 Consolidate repository documentation and startup context 4 min
+
+- Step-Id: `20261126-2204-doc-context-cleanup`
+- Task: Repository cleanup and context consolidation
+- When: '2026-11-26 22:04 CET' - '2026-11-26 22:07 CET'
+- Model: `gpt-6`
+- Change: Compacted agent startup guidance, centralized validation input selection, archived the port plan and dated evidence, and reconciled the actionable backlog with the recorded results. Removed the superseded performance pointer and 80 generated Python bytecode files.
+- Validation: Fixture manifest verification passed (89 files). Checked documentation diffs, relative link targets, QKB evidence anchors, and all 56 existing CAPIN/review IDs. Matched completed checkboxes to their disposition record and verified SPEC.md byte-for-byte. Build and hardware validation were skipped for this documentation-only step.
+- Result: Startup reading fell from about 10,700 to 3,800 words. Six previously missing local performance artifacts remain unavailable. Existing inbox, draft release notes, and submodule state were preserved.
+- Decision: Use TODO for open acceptance, HANDOFF for live state, and search historical evidence by task ID, Step-Id, or commit.
+- Artifacts/logs: `.agent/archive/2026-11-26-task-dispositions.md`

@@ -30,18 +30,12 @@ Java Card runtime boundary:
   at high CPU and produced unbounded output.
 - Diagnose the host setup: `./tools/doctor`
 
-For the long JCAlgTest client campaigns, run `2 -> PERFORMANCE TEST` (1–3
-hours) and `1 -> All algorithms` (5–8 hours) on different identified Pico 2
-tokens when possible. Keep each token's result directory and serial telemetry
-separate, record its chip ID and firmware hash, and continue on another
-available token if one becomes unavailable or stalls.
-
 After changing source:
 
 1. Build ARM.
 2. Fix all errors and warnings.
 3. Flash the full JCVM (`./tools/cycle choupi`).
-4. Inspect serial output.   
+4. Inspect serial output.
 5. Treat `TEST:FAIL`, `FAULT`, a timeout, or any nonzero command status as failure.
 6. Diagnose, edit, and repeat until the hardware test passes.
 
@@ -132,65 +126,15 @@ invariant. If a task conflicts with one, stop and ask through
 violations by ID. "Known gap" entries in `SPEC.md` are TODO work, not
 permission to diverge.
 
-## Incremental commits and progress log
+## Change discipline
 
-Work in small, logical steps. A logical step is one coherent change that can be
-validated independently.
-
-At the end of every logical step:
-
-1. Validate the step with the relevant build, test, hardware cycle, or inspection.
-2. Append a concise record to the repository-root `progress.md`; never rewrite or
-   delete earlier records. Append at the end of file.
-3. Create **one** new Git commit containing the step and its `progress.md` record.
-   Do not amend or reuse the previous step's commit.
-4. Commit only files that belong to that step; preserve unrelated pre-existing
-   changes.
-
-### One step = one commit (no hash backfill commits)
-A commit cannot contain its own SHA. Records therefore link to commits through
-a **Step-Id**, not a SHA.
-- Choose a unique Step-Id before committing: `YYYYMMDD-HHMM-<short-slug>`, e.g.
-  `20261114-1845-mem01-t7-vpcd`. Put it in the `progress.md` record and as a
-  trailer in the commit message, together with the model:
-  ```
-  Step-Id: 20261114-1845-mem01-t7-vpcd
-  Agent-Model: gpt6-luna
-  ```
-  Find the commit for a record with `git log --grep='Step-Id: <id>'`.
-- **Never** create a commit whose only purpose is to record, backfill or correct
-  a commit hash ("Record … commit", "Backfill … SHA"). Never amend to insert a
-  SHA either.
-- Do not create commits that only restate status already recorded (e.g.
-  repeating the same "remains open" decision). Bookkeeping-only commits
-  (`progress.md`, `TODO.md`, HANDOFF, QKB) are allowed only when they add new
-  information: a new measurement, a hardware or campaign result, a new blocker,
-  or a user directive.
-- A record may cite **earlier** commits by SHA (e.g. "regression introduced in
-  `4f225cbb`"); those SHAs already exist.
-
-Each `progress.md` record should be structured as:
-
-```markdown
-## YYYY-MM-DD <short step title> <total minutes of actual work>
-
-- Step-Id: `<YYYYMMDD-HHMM-short-slug>` (same value as the commit trailer)
-- Task: `<TODO identifier, e.g. MEM-01 T7, if applicable>`
-- When: '<start date + time>' - '<end date + time>'
-- Model: `<name of the model you are, e.g., gpt6-funny>`
-- Change: <what changed and why>
-- Validation: <commands/tests/hardware checks run and whether they passed>
-- Result: <key measured or observed outcome; include failures or limitations>
-- Decision: <what this establishes and the next action, if any>
-- Artifacts/logs: `<paths, hashes, or none>`
-```
-
-Older records use `Commit: <SHA>` lines and separate backfill commits. Those are
-historical; do not convert or "fix" them.
-
-Include exact measurements, important runtime output, hashes, or archived log
-paths when they materially explain how the step worked. State explicitly when a
-metric was not measured or a validation was intentionally skipped.
+Preserve existing worktree changes. Validate each coherent step, append its
+record to [progress.md](progress.md), and create one new commit for that step
+and record. Follow the [record format](.agent/SESSION_CONTINUITY.md#progress-record).
+Use a unique `YYYYMMDD-HHMM-short-slug` Step-Id in the record and in the commit
+trailer, with an `Agent-Model` trailer. Preserve earlier records. Never amend,
+backfill a commit hash, or commit a status-only restatement. Commit only files
+belonging to the step.
 
 ## Session Continuity
 
@@ -209,23 +153,14 @@ created by another session.
 
 Maintain `.agent/QKB.md` file containing issues encountered (e.g., inaccessible token, failures to run lsusb, sudo related issues...). When robust fix for the issue is found, mark it as viable solution and try to use it later when issue is encountered again. 
 
-## Validation suites and test layout
+## Validation suites
 
-- **JCAlgTest host client for new runs: 1.8.5-20261121** (user directive 2026-11-21, second update). The user supplied an updated 1.8.5 client with fewer internal repetitions of the tested method for asymmetric algorithms, so performance runs finish much sooner. Use it for every new experiment: `--client-jar "$(./tools/fixture-path jcalgtest.client.1.8.5-20261121)"` (`tests/fixtures/external/jcalgtest/1.8.5-20261121/client/AlgTestJClient.jar`, SHA-256 `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`; it embeds version string 1.8.5, so identify it by hash). The earlier 1.8.5-20261120 client (`724bda75…`) and 1.8.5 client (`b6a753be…`) are historical; a run already started with one of them may finish with it; never mix clients within one run, and record which one was used. The rest of this bullet describes the earlier 1.8.5 client.
-- **JCAlgTest host client: always 1.8.5** (user directive 2026-11-14). Every JCAlgTest run uses the user-supplied 1.8.5 host client at `tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar`. This covers full campaigns (option 1 and option 2), focused or short runs, VPCD/simulator runs and physical runs. Select it explicitly with `tools/run-jcalgtest --client-jar PATH` or the runner's client override. Scripts and `./tools/fixture-path jcalgtest.client` still default to the historical 1.8.4 client. Always override that default; never run, describe or accept a new result with the 1.8.4 client. Phrases elsewhere such as "matching client", "versioned client" or "unchanged 1.8.4 client" mean the 1.8.5 client for new work. The 1.8.4 client remains historical evidence only (its `INS_CARD_RESET` did not reach the card because of a negative APDU length bug, so object deletion was never triggered). **JCAlgTest CAP: always 1.8.5 / jc305** (user directive 2026-11-18): use the unchanged user-supplied `tests/fixtures/external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap` (SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`, GETVERSION `1.8.5_jc305`), resolved with `./tools/fixture-path jcalgtest.cap`. It fixes the RSA NOPAD setup input (top byte cleared before raw RSA encryption) that made random `F105` failures in the 1.8.4 CAP. The 1.8.4 / jc305 CAP (`jcalgtest.cap.1.8.4`) is historical evidence only; never run, describe or accept a new result with it. Record client and CAP versions separately. Do not fall back to 1.8.2. See `tests/README.md` for invocation and hash verification.
-- **JCAlgTest 1.8.6/jc32 PQC pair** (user directive 2026-11-25): `jcalgtest.cap.1.8.6-jc32` (`AlgTest_v1.8.6_jc32.cap`, CAP 2.3, GETVERSION `1.8.6_jc32`) with `jcalgtest.client.1.8.6`, built here from the user's AlgTest sources (see `tests/fixtures/external/jcalgtest/1.8.6/README.md`). It adds the ML-KEM/ML-DSA support rows. Run it in addition to, never instead of, the unchanged 1.8.5/jc305 CAP, which stays the default and the acceptance baseline (`JCALGTEST_VARIANT=jc32 ./tools/test-jcalgtest-support-vpcd`). Both CAPs share the package and applet AIDs, so delete one before installing the other, and reinstall 1.8.5/jc305 on a board when you are done.
-- The separate supplied Java Card API validation suite is under `tests/fixtures/external/javacard-api/provided-20261107/`; retain all version variants and use its own client.
-- `tests/fixtures/manifest.json` pins inputs and hashes. Run `./tools/fixture-path --verify` before acceptance. Keep supplied CAP/JAR bytes unchanged; no Java algorithm providers or modified algorithm CAPs.
-- Test code belongs in `tests/unit`, `tests/integration`, or `tests/hardware`; repository-owned test applet sources belong in `tests/fixtures/local`. Keep stable entrypoints in `tools/`.
-- Generated tests/CAPs/images go under `build/`; logs/results go under `artifacts/`. SDKs/converters belong in `.local-toolchain/`, not external fixture directories.
-- Legacy 1.8.2 inputs/results remain explicitly versioned historical evidence. Recheck imports, client compatibility, expected responses and support baselines for the 1.8.5 CAP with the 1.8.5 client; never relabel old results (including 1.8.4 CAP results) as 1.8.5 CAP or 1.8.5 client results. See `tests/README.md` and `docs/testing-data-migration.md`.
-
-### Long physical JCAlgTest campaigns
-- Treat Windows-host testing as independent evidence; still run the 1.8.5 client (with the unchanged 1.8.5/jc305 CAP) on a physical Pico 2 in this environment when PC/SC access is available.
-- Prioritize client option `2` (all JC API methods, 256-byte data; estimated 1–3 hours) and option `1` (all algorithms; estimated 5–8 hours). These runs exercise periodic `INS_CARD_RESET` / `JCSystem.requestObjectDeletion()` behavior.
-- Use a different identified Pico 2 for the second campaign when possible. Keep per-device results, reader name, chip ID, firmware hash, and serial telemetry separate. If one device disappears or stalls, continue on another available device rather than waiting for it.
-- Do not claim either run started until the physical reader is enumerated in PC/SC and the client is connected to that exact reader.
-- Record the client JAR's SHA-256 (1.8.5-20261121: `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`; 1.8.5-20261120: `724bda75022756605bdde5f54edc9fece4e0b70a23eed5ddc86645d60e1eabd9`; earlier 1.8.5: `b6a753be280a225efc1b237fd53319c01946af15b4f2ae2e57adaad8e3eacec3`) with every result. The JAR hash is the authoritative client identity: the client version embedded in result CSVs is unreliable (a 1.8.5 run reported 1.8.4). A result without a recorded JAR hash does not count as acceptance.
+Follow [tests/README.md](tests/README.md) for fixture selection, verification,
+campaigns and evidence. Use the unchanged 1.8.5/jc305 CAP with the explicit
+`jcalgtest.client.1.8.5-20261121` client override as the baseline. Run the
+pinned 1.8.6/jc32 pair in addition for the 3.2 preview. Preserve fixture bytes,
+use the separate API suite's own client, and run `./tools/fixture-path --verify`
+before acceptance.
 
 ### Build modes and card state (SPEC INV-24, INV-27)
 - There are two build modes. **normal** is the default: object deletion ON and all debug/trace switches OFF. **diagnostic** is any debug switch ON, or `PICO2_ENABLE_OBJECT_DELETION=0`. `tools/build` records `mode=normal|diagnostic` in its provenance. Only normal images are evidence.

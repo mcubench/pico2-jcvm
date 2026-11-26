@@ -1,81 +1,40 @@
 # Session continuity
 
-This repository implements the work packages in `plan.md`. Read `AGENTS.md`,
-`plan.md`, this file, and `.agent/HANDOFF.md` before making substantial changes.
+For substantial work, read [AGENTS.md](../AGENTS.md),
+[SPEC.md](../SPEC.md), and [HANDOFF.md](HANDOFF.md) at startup. Use
+[TODO.md](../TODO.md) for open work and [EXT_REQUESTS.md](EXT_REQUESTS.md)
+for external dependencies. The [original port plan](../docs/archive/plan.md)
+is historical. Search [progress.md](../progress.md) by task ID, Step-Id, or
+commit and read the matching records. Consult [QKB.md](QKB.md) for relevant
+troubleshooting and [TOOLCHAIN.md](TOOLCHAIN.md) for dependency setup.
 
-## Change discipline
+Re-read the handoff before updating it. Keep it to 60 lines or fewer and
+overwrite the current handoff with last-observed board state, active runs,
+blockers, and immediate next steps. Put durable tasks in TODO and completed
+work in progress. Preserve other sessions' work and verify that the pinned OS
+and Java Card SDK submodules are populated before a full build.
 
-- Preserve every pre-existing worktree change, especially the provided
-  `choupi/` tree. The original `AlgTest_JavaCard/` tree is archived under
-  `artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`.
-- Keep each implementation change to one coherent step. Validate it with the
-  available build, test, or inspection, append to root `progress.md`, and make a
-  new commit containing the step. Do not amend earlier commits.
-- Do not claim hardware validation unless an attached Pico 2 was actually
-  flashed and its finite serial log inspected. Physical pool availability is
-  volatile; treat the current HANDOFF as the source for the last observed
-  state and use an enumerated board under the root `AGENTS.md` build gates
-  with bounded logs. Old "no hardware / boards disconnected" notes are never
-  standing rules.
-- **PC/SC discovery can abort other campaigns (user directive 2026-11-18).**
-  Several sessions share one pcscd. Before any PC/SC step, check for live runs:
-  `pgrep -fa 'AlgTestJClient|jcalgtest-apdu-watchdog|tools/monitor'` and the
-  HANDOFF.
-  - **Never** run `sudo -n /usr/local/sbin/pico2-pcsc-reader` while any
-    campaign is live. It always ends with `systemctl restart pcscd.service`,
-    which drops every open PC/SC session on every token. This aborted the F42D
-    option-1 run on 2026-11-17.
-  - Use `./tools/list-readers` only when it is necessary, e.g. no exact reader
-    name is known yet. Warning: it can socket-activate pcscd, and if combined
-    with the helper it aborts other sessions' campaigns.
-  - Identify tokens without PC/SC instead. The USB serial is the chip ID:
-    `PICO2_HOST_USB_ACCESS=1 lsusb -v -d 2e8a:0009 | grep -E 'iSerial|iProduct'`.
-    The exact reader name is
-    `Pico 2 CHOUPI CCID [JCVM CCID] (<CHIPID>) 00 00`.
-  - pcscd picks up a re-enumerated token by hotplug: 07E7 reappeared after
-    every reflash on 2026-11-18 without the helper. Run the helper only when a
-    token is on USB but missing from PC/SC **and** no campaign is running.
-    Record the refresh in `progress.md`.
-- Treat multiple identified physical Pico 2 devices as a failover pool. If one
-  becomes unavailable, fails to enumerate, or stops responding, record its
-  board-level failure and continue on another usable board without waiting for
-  recovery. Keep remaining workers active in parallel runs. Reconfirm identity
-  before flashing or attributing results, and preserve per-board image,
-  outcome, and failure logs. Retry the unavailable board only after access
-  returns.
-- For long physical JCAlgTest campaigns, prioritize the interactive client
-  options `2 -> PERFORMANCE TEST` (all JC API methods with 256-byte data,
-  estimated 1–3 hours) and `1 -> All algorithms` (estimated 5–8 hours). These
-  runs exercise periodic `INS_CARD_RESET` / `JCSystem.requestObjectDeletion()`
-  calls. Use a different identified Pico 2 for the second long run when
-  possible, instead of consuming both runs sequentially on one token. If a
-  token becomes unavailable or stalls, continue on another enumerated token;
-  keep separate per-device result folders and serial logs and record the
-  firmware hash and chip ID for each run.
-- Do not invoke compiler binaries directly. Use the repository build wrappers
-  once available.
-- Keep `.agent/HANDOFF.md` as next steps only: blockers, current board state and
-  the next concrete actions, ≤ 60 lines. **Overwrite it; never append a new
-  "Current handoff" block.** Do not copy task definitions from `TODO.md` or
-  completed-work narratives (those go to `progress.md`). Never replace or
-  remove earlier `progress.md` records.
+## Progress record
 
-## Source and dependency handling
+Each `progress.md` record should be structured as:
 
-- Runtime cryptographic and Java Card API behavior belongs in native C++ VM
-  code reached through CAP-to-API dispatch. Do not add Java providers/adapters,
-  or implement algorithms in test or upstream CAP files. Existing CAPs may be
-  run to test native API behavior.
+```markdown
+## YYYY-MM-DD <short step title> <total minutes of actual work>
 
-- The target is RP2350 Cortex-M33. RISC-V is out of scope (user decision
-  2026-11-14): there is no RISC-V build gate and no RISC-V measurement.
-  `AGENTS.md` and `plan.md` agree.
-- Preserve the user-provided source and CAP artifacts. Do not replace the
-  supplied AlgTest version without inspecting and recording its provenance.
-- The pinned CHOUPI OS and Java Card SDK dependencies are submodules declared
-  in `choupi/.gitmodules`; verify that they are populated before attempting a
-  full build.
+- Step-Id: `<YYYYMMDD-HHMM-short-slug>` (same value as the commit trailer)
+- Task: `<TODO identifier, e.g. MEM-01 T7, if applicable>`
+- When: '<start date + time>' - '<end date + time>'
+- Model: `<name of the model you are, e.g., gpt6-funny>`
+- Change: <what changed and why>
+- Validation: <commands/tests/hardware checks run and whether they passed>
+- Result: <key measured or observed outcome; include failures or limitations>
+- Decision: <what this establishes and the next action, if any>
+- Artifacts/logs: `<paths, hashes, or none>`
+```
 
-## Active validation inputs
+Older records use `Commit: <SHA>` lines and separate backfill commits. Those are
+historical; do not convert or "fix" them.
 
-The user authorized full testing-data migration on 7 November 2026. The JCAlgTest 1.8.5 / jc305 CAP (user-supplied 2026-11-18; 1.8.4 CAP results are historical) with the 1.8.5 host client is the selected baseline (CAP and client per `AGENTS.md`), superseding historical 1.8.2 instructions. Use `tools/fixture-path` and `tests/fixtures/manifest.json`. Test code is under `tests/`; the supplied original tree is archived, not discarded. Preserve legacy results as historical evidence and require new version-specific acceptance.
+Include exact measurements, important runtime output, hashes, or archived log
+paths when they materially explain how the step worked. State explicitly when a
+metric was not measured or a validation was intentionally skipped.

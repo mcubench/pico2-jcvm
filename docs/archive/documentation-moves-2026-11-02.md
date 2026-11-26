@@ -15,7 +15,7 @@ to `.agent/HANDOFF.md`.
 | `todo/review_20261023.md` | [Malformed-CAP review](../../artifacts/reviews/malformed-cap-review-20261023.md) |
 | `STATUS.md` | [Historical status snapshot](../../.agent/archive/2026-11-02-status-pre-tidy/STATUS.md) |
 | `readme.md` | [Physical JCAlgTest runbook](../jcalgtest-physical-runbook.md); [README.md](../../README.md) is the new entry point |
-| `perf_tips.md` | [Development performance notes](development-performance.md); a root compatibility link remains |
+| `perf_tips.md` | [Development performance notes](development-performance.md); root compatibility link retired on 2026-11-26 |
 | `reference/autonomous_physical_dev.md` | [Archived upstream note](../../.agent/archive/2026-11-02-stale-reference/autonomous_physical_dev.md) |
 | `CHOUPI JCVM → Raspberry Pi Pico 2 (Cortex-M33) Port Plan.pdf` | [Initial port plan PDF](../initial-pico2-jcvm-port-plan-2026-10-09.pdf); this draft names JCAlgTest 1.8.4, while the current `plan.md` uses 1.8.2 |
 

@@ -44,7 +44,7 @@ instruction. An arithmetic instruction can execute without fetching a CAP
 view. The host replay included Descriptor. The standard GlobalPlatformPro
 load used for the Pico 2 comparison omitted it, so the measured host share
 for Descriptor validation does not establish the share of runtime on the
-Pico 2. [Field resolution](../choupi/src/jc_bytecodes/bc_object_field.cpp#L144) · [Benchmark](review_VMperf_20261122.md) · [Host load-code extraction](../tests/integration/cap_load_code.py)
+Pico 2. [Field resolution](../choupi/src/jc_bytecodes/bc_object_field.cpp#L144) · [Benchmark](archive/review_VMperf_20261122.md) · [Host load-code extraction](../tests/integration/cap_load_code.py)
 
 ## Checks during execution
 

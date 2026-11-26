@@ -22,7 +22,7 @@ reset the reader and ran the same prepare and 0/1/5/50-repeat APDUs with
 16-byte inputs. A zero-repeat median was subtracted from the 50-repeat
 batch and divided by 50. XOR and native AES had three 50-repeat samples.
 Software AES had one 50-repeat sample and shorter checks for scaling.
-[Normal APDU log](../artifacts/build-audit/bytecode-second-pass-20261122/normal-apdus.log)
+[Normal APDU log](../../artifacts/build-audit/bytecode-second-pass-20261122/normal-apdus.log)
 
 | Normal-image workload | 50-repeat APDU | Zero-repeat median | Net ms/op |
 | --- | ---: | ---: | ---: |
@@ -43,7 +43,7 @@ with additional array probes took 20.905 s. The builds had different
 instrumentation and code layout. Their difference shows that the
 diagnostic times themselves are sensitive to the probe build. Use the
 normal image for throughput and the profiles for approximate attribution.
-[First profile](../artifacts/build-audit/bytecode-second-pass-20261122/profile-summary.txt) · [Array profile](../artifacts/build-audit/bytecode-second-pass-20261122/array-profile-summary.txt)
+[First profile](../../artifacts/build-audit/bytecode-second-pass-20261122/profile-summary.txt) · [Array profile](../../artifacts/build-audit/bytecode-second-pass-20261122/array-profile-summary.txt)
 
 Both diagnostic images report CPLC source prefix `65ba03b3eb12b9f5`.
 Their UF2 SHA-256 values are
@@ -53,7 +53,7 @@ for the first image and
 for the array image. All 35 prepare and workload APDUs returned
 `AA9000` on each image. EE11 was restored to the exact normal UF2 and
 its CPLC, runtime summary, applet SELECT, and GETVERSION were confirmed.
-[Restored image check](../artifacts/build-audit/bytecode-second-pass-20261122/restore-normal-apdus.log)
+[Restored image check](../../artifacts/build-audit/bytecode-second-pass-20261122/restore-normal-apdus.log)
 
 | Sampled AES phase or handler group | First profile | Array profile |
 | --- | ---: | ---: |
@@ -82,7 +82,7 @@ and constructs a temporary `JC_Array`, after which the accessor checks
 the reconstructed array and fetches the payload. The short accessor
 reads its two bytes with separate filesystem lookups. The existing
 `readPersistentArrayRange()` shows how one checked record view can
-supply multiple bytes. [Array object access](../choupi/src/jc_types/jc_array.cpp#L412) · [Record reconstruction](../choupi/src/jc_handlers/flashmemory.cpp#L2342) · [Checked range read](../choupi/src/jc_handlers/flashmemory.cpp#L2607) · [Short element read](../choupi/src/jc_handlers/flashmemory.cpp#L2669)
+supply multiple bytes. [Array object access](../../choupi/src/jc_types/jc_array.cpp#L412) · [Record reconstruction](../../choupi/src/jc_handlers/flashmemory.cpp#L2342) · [Checked range read](../../choupi/src/jc_handlers/flashmemory.cpp#L2607) · [Short element read](../../choupi/src/jc_handlers/flashmemory.cpp#L2669)
 
 Of 1,576 sampled byte loads, 475 reopened persistent array metadata. Each
 of the 477 sampled short loads did so. Record reconstruction accounted
@@ -91,7 +91,7 @@ for 43.013 ms of the 330.555 ms summed over all instruction samples
 reconstruction measurement includes allocating the temporary array
 wrapper. The first experiment should target that 13% bucket and the
 duplicate lookup for a short. The 35% total for array loads also includes
-work the VM needs to retain. [Detailed array profile](../artifacts/build-audit/bytecode-second-pass-20261122/array-profile-summary.txt)
+work the VM needs to retain. [Detailed array profile](../../artifacts/build-audit/bytecode-second-pass-20261122/array-profile-summary.txt)
 
 The first prototype should carry the live array's checked type, length,
 and index to one storage lookup. Check the returned record's identity
@@ -117,7 +117,7 @@ experiment can reuse the current frame and PC within one instruction
 and simplify the decoder-to-handler handoff. Fetch and operand bounds
 must remain enforced against that frame, including on method return and
 exception paths. Calls can change the frame or package, so frame
-references should be reacquired whenever that happens. [Interpreter loop](../choupi/src/interpretor.cpp#L390)
+references should be reacquired whenever that happens. [Interpreter loop](../../choupi/src/interpretor.cpp#L390)
 
 Watchdog reload alone has a smaller ceiling. Measure scratch tracing
 separately before changing its cadence. Any change needs a worst-case
@@ -133,7 +133,7 @@ below arrays and the interpreter loop. At the measured share, even
 eliminating the scan cost would give about **1.07×** on this workload if
 the measured mix held. Other applets may have longer hot methods or more
 branches. Using the second profile puts that arithmetic ceiling at
-about **1.10×**. [Instruction-boundary scan](../src/cap_instruction_boundaries.hpp#L133)
+about **1.10×**. [Instruction-boundary scan](../../src/cap_instruction_boundaries.hpp#L133)
 
 If branch-heavy workloads justify it, try a bounded cache for successfully
 verified targets, keyed by package revision, the exact method range, and
@@ -155,7 +155,7 @@ INSTALL preflight and does not measure a full CAP-store CRC scan.
 Warm dynamic and ROM CAP lookup time inside handlers was 0.6–1.3%
 of sampled AES time. Extending cache lifetimes or removing repeat
 validation at lifecycle boundaries has little support as the next
-steady-state optimization. [Lifecycle sample](../artifacts/build-audit/bytecode-second-pass-20261122/profile-serial.log)
+steady-state optimization. [Lifecycle sample](../../artifacts/build-audit/bytecode-second-pass-20261122/profile-serial.log)
 
 The global store revision invalidates views conservatively even when an
 unrelated slot changes. Keeping that design simplifies the proof against
@@ -166,7 +166,7 @@ before considering per-slot generations. Keep AID and slot checks,
 dependency linkage, storage integrity checks and the existing runtime
 trust boundary. A full verifier remains separate work and must establish
 its guarantees before any corresponding runtime work can be moved.
-[CAP execution trust model](CAP_EXECUTION_TRUST_MODEL.md)
+[CAP execution trust model](../CAP_EXECUTION_TRUST_MODEL.md)
 
 The existing field-offset cache is still useful. The remaining
 `getfield_a_this` time includes live reference and ownership handling.
@@ -190,7 +190,7 @@ under INV-22. The profile establishes no side-channel or key-storage
 guarantee under INV-20 and INV-21. Any follow-on must preserve the declared
 resource limits and distinguish normal hardware measurements from
 diagnostic timing and full empty-card acceptance under INV-23 through
-INV-28. [Product invariants](../SPEC.md)
+INV-28. [Product invariants](../../SPEC.md)
 
 ## Reproduction
 
@@ -200,4 +200,4 @@ is a diagnostic ARM `max_crypto` image. Use the documented physical-token
 procedure to flash and collect a bounded serial log. Replay the previously
 recorded JCAlgTest APDUs and run
 `python3 tests/hardware/summarize_vm_perf_profile.py SERIAL_LOG APDU_LOG`.
-Keep normal and diagnostic logs separate. [Profile builder](../tools/build-vm-perf-profile) · [Counter parser](../tests/hardware/summarize_vm_perf_profile.py) · [Physical procedure](../reference/physical-token-access/SKILL.md)
+Keep normal and diagnostic logs separate. [Profile builder](../../tools/build-vm-perf-profile) · [Counter parser](../../tests/hardware/summarize_vm_perf_profile.py) · [Physical procedure](../../reference/physical-token-access/SKILL.md)

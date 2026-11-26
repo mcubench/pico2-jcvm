@@ -1,41 +1,8 @@
 # Java Card bytecode performance on Pico 2
 
-## Implemented fix and measured result
+**Repeated validation of the uploaded CAP dominates the two JCAlgTest software workloads in the host profile.** On the Pico 2, software AES took **2,524 ms per 16-byte block**, compared with **7.80 ms** for a 16-byte native-backed AES-128 ECB `Cipher.doFinal()` invocation. The XOR of two 16-byte spans took **34.86 ms**.
 
-The VM now reuses validated CAP metadata and checked reference-field
-offsets. On the same physical Pico 2, software XOR ran **23.9× faster**
-and software AES ran **5.92× faster**. The 50-operation software AES APDU
-fell from **126.029 s to 21.344 s**.
-
-| Workload, 16 bytes | Before, net ms/op | After, net ms/op | Speedup |
-| --- | ---: | ---: | ---: |
-| `SWAlgs_xor()` | 34.86 | 1.46 | 23.9× |
-| `SWAlgs_AES()` | 2,518.08 | 425.68 | 5.92× |
-| Native-backed AES-128 ECB `Cipher.doFinal()` | 7.80 | 3.24 | 2.41× |
-
-- **CAP views.** Each uploaded package slot has one cache entry. The
-  first runtime lookup in a CAP store revision runs the existing full
-  structural parser. Later lookups reuse its validated component view.
-  The store advances its revision before slot changes and rechecks stored
-  code integrity before publishing views. Slot reuse at the same address
-  and length therefore requires fresh validation. The initial APDU-only
-  experiment was extended to reuse across APDUs in `cceada94`.
-- **Reference-field offsets.** Uploaded `getfield_a_this` instructions
-  reuse checked offsets within one APDU, keyed by the calling package,
-  constant-pool index, and the live receiver's concrete package and class.
-  A cache miss uses the full field resolver. Each access still checks the
-  live reference, reads the current field value, and propagates its
-  owner. This change is in `a2a69d95`.
-
-The combined caches and revision state use **745 bytes of static ARM
-RAM**. LOAD, INSTALL, and restore retain their preflight checks. The
-runtime still checks method bounds, fetches, branches, and access to live
-objects. The native-backed speedup is for the complete Java Card API
-invocation, including its applet and VM overhead. See the
-[physical A/B details](#physical-ab-after-cap-caching) and the
-[execution trust model](CAP_EXECUTION_TRUST_MODEL.md).
-
-## Original baseline and profiling
+## Baseline
 
 The physical replay used EE116F37C7E4A04E, reader
 `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`, on normal
@@ -135,14 +102,14 @@ unverified.
   CAP validation is amortized. Their share of ARM time was unmeasured.
 
 Relevant code paths are
-[`bc_getfield_a_this` and field resolution](../choupi/src/jc_bytecodes/bc_object_field.cpp#L1234),
-[`getCap`](../choupi/src/jc_handlers/flashmemory.cpp#L3045),
-[`JC_Cap` construction](../choupi/src/jc_handlers/jc_cap.cpp#L719),
-[Descriptor type-offset validation](../choupi/src/jc_handlers/jc_cap.cpp#L412),
-[the reference value cache](../choupi/src/jc_types/jc_instance.cpp#L562)
-and [the interpreter loop](../choupi/src/interpretor.cpp#L393).
+[`bc_getfield_a_this` and field resolution](../../choupi/src/jc_bytecodes/bc_object_field.cpp#L1234),
+[`getCap`](../../choupi/src/jc_handlers/flashmemory.cpp#L3045),
+[`JC_Cap` construction](../../choupi/src/jc_handlers/jc_cap.cpp#L719),
+[Descriptor type-offset validation](../../choupi/src/jc_handlers/jc_cap.cpp#L412),
+[the reference value cache](../../choupi/src/jc_types/jc_instance.cpp#L562)
+and [the interpreter loop](../../choupi/src/interpretor.cpp#L393).
 
-## Original optimization proposals
+## Speedup candidates in order
 
 1. **Reuse a validated CAP view per package generation.** Amortize component
    validation across bytecode execution. An APDU-scoped cache is a bounded
@@ -165,9 +132,8 @@ and [the interpreter loop](../choupi/src/interpretor.cpp#L393).
    placement are further experiments. Keep bytecode fetch and branch
    bounds and check the firmware flash and RAM budgets.
 
-The first two proposals led to the caches described above. Changes to
-dispatch, branch checks, and watchdog cadence remain open pending
-measurement of their costs on the RP2350.
+The host profile makes the first experiment the priority. Hardware
+speedup is still unmeasured. No production interpreter changes were made.
 
 ## Reproduction
 
@@ -180,7 +146,7 @@ Use `./tools/fixture-path --verify` and
 ```
 
 The runner logs the exact APDUs for replay with
-[`ApduTimer`](../tests/hardware/ApduTimer.java) against an identified
+[`ApduTimer`](../../tests/hardware/ApduTimer.java) against an identified
 Pico 2. Host timing and diagnostic binaries were built separately. The
 initial external Callgrind attempt failed on the emulator's ptrace/SIGTRAP
 protocol, so handler and CAP timings used a source copy with sampling
@@ -191,35 +157,3 @@ sampling diffs are under
 `artifacts/build-audit/bytecode-performance-20261122/`. The unmodified
 host timing is in `host-timing.log`. The physical APDU and serial timing
 are in `hardware-ee11.log` and `serial-ee11.log`.
-
-## Physical A/B after CAP caching
-
-The comparison used the same Pico 2, EE116F37C7E4A04E, and the same
-installed JCAlgTest 1.8.5/jc305 applet. Both were normal ARM `max_crypto`
-images. Each run began with a reader reset and used the same prepare and
-measurement APDUs. The standard GlobalPlatformPro install omitted the
-Descriptor component. The development flash preserved card storage.
-
-Net time is the difference between the 50-repeat APDU and the median
-zero-repeat APDU, divided by 50. XOR and native AES had three 50-repeat
-samples per image. Software AES had one, plus three single-repeat samples
-and one five-repeat sample per image. The optimized software AES net time
-was 429.0 ms/op at one repeat and 425.8 ms/op at five repeats.
-
-Serial telemetry for the full software AES APDU measured 126.022295 s
-and 21.338876 s inside the VM, with
-3.280 and 3.519 ms in flash sync. Each APDU journaled 768 bytes and wrote
-no full snapshot.
-
-CPLC identified the baseline as `0cf976ddba5b8a3f` and the candidate as
-`a2a69d952c309690`. The baseline UF2 SHA-256 was
-`effccdec0c2b3319d02db2955a94451e07aa8e396c5ccf9d6514a693603acda6`.
-The candidate UF2 SHA-256 was
-`cf1ea6b55d560c9a053a8dd706b284f3f3abd87865089dc0140a51372af385d7`.
-The full JCVM flash and runtime cycle passed. Both runs used reader
-`Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`.
-All 35 workload and prepare APDUs on each image returned `AA9000`.
-The timings measure the combined CAP-view and field-offset caches.
-
-The APDU logs, serial captures, and checked timing summary are in
-`artifacts/build-audit/cap-view-cache-20261122/`.

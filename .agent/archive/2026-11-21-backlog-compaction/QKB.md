@@ -224,7 +224,7 @@ Compacted: 2026-11-11. Reusable diagnoses and fixes; current tasks live in
 The [byte-for-byte backup](archive/2026-11-11-qkb-compaction/QKB.md),
 [SHA-256 manifest](archive/2026-11-11-qkb-compaction/SHA256SUMS) and
 [migration notes](archive/2026-11-11-qkb-compaction/MIGRATION.md) preserve all original text.
-The [complete issue catalog](QKB_INDEX.md) indexes every original heading and the earlier historical index.
+The [complete issue catalog](../QKB_INDEX.md) indexes every original heading and the earlier historical index.
 Catalog titles retain dated wording; read later corrections and the summaries below before reusing a diagnosis.
 Evidence links identify archived sections; resolve original relative links from `.agent/`.
 
@@ -283,7 +283,7 @@ Host-only visibility with no guest USB device suggests passthrough trouble, not 
 Do not start or claim a physical campaign until the client connects to that exact reader.
 Do not restart PC/SC while another test is active; service restart can interrupt VPCD transactions too.
 
-Evidence: [E002](QKB_INDEX.md#e002), [E032](QKB_INDEX.md#e032), [E425](QKB_INDEX.md#e425), [E006](QKB_INDEX.md#e006).
+Evidence: [E002](../QKB_INDEX.md#e002), [E032](../QKB_INDEX.md#e032), [E425](../QKB_INDEX.md#e425), [E006](../QKB_INDEX.md#e006).
 
 2026-11-14 HOST-01 code-level cause/fix for the D92 late-run queued response:
 `service_pending_final_response()` used a zero retry timestamp to mean
@@ -344,7 +344,7 @@ Local VPCD sockets, AF_UNIX tests and ptrace can also fail under sandbox policy;
 EPERM/bind/ptrace denial is a host-access failure, not a protocol regression.
 Use the required execution path; if unavailable, stop hardware work and continue offline.
 
-Evidence: [E417](QKB_INDEX.md#e417), [E029](QKB_INDEX.md#e029), [E367](QKB_INDEX.md#e367), [E413](QKB_INDEX.md#e413).
+Evidence: [E417](../QKB_INDEX.md#e417), [E029](../QKB_INDEX.md#e029), [E367](../QKB_INDEX.md#e367), [E413](../QKB_INDEX.md#e413).
 
 Host-access regression, 2026-11-12 22:49 UTC: the approved reader helper was
 invoked through the required elevated host path, but `sudo` returned
@@ -379,7 +379,7 @@ The updated path was used to flash empty-card max_crypto to D92 and 8E; both
 passed finite serial health. Physical registry verification is pending PC/SC
 recovery.
 
-Evidence: [E429](QKB_INDEX.md#e429), [E093](QKB_INDEX.md#e093), [E106](QKB_INDEX.md#e106), [E065](QKB_INDEX.md#e065).
+Evidence: [E429](../QKB_INDEX.md#e429), [E093](../QKB_INDEX.md#e093), [E106](../QKB_INDEX.md#e106), [E065](../QKB_INDEX.md#e065).
 
 ## VPCD setup, stale state and process lifecycle — viable controls
 
@@ -395,7 +395,7 @@ image/sidecar save failures and clean close. Run it through host execution that
 permits `ptrace`; continue checking diagnostics and results for new failure
 paths beyond this matrix.
 
-Evidence: [E360](QKB_INDEX.md#e360), [E089](QKB_INDEX.md#e089), [E288](QKB_INDEX.md#e288), [E297](QKB_INDEX.md#e297), [E342](QKB_INDEX.md#e342).
+Evidence: [E360](../QKB_INDEX.md#e360), [E089](../QKB_INDEX.md#e089), [E288](../QKB_INDEX.md#e288), [E297](../QKB_INDEX.md#e297), [E342](../QKB_INDEX.md#e342).
 
 ## RP2350 overlay snapshot semantic corruption — fallback is safe but repair is incomplete
 
@@ -516,7 +516,7 @@ Keep timeout, deliberate interruption, induced ptrace panic and genuine runtime 
 External Windows RSA preparation failed before the measurement APDU; the method label alone does not establish an arithmetic failure.
 Continue RESOURCE-01 and offline-only JC-RESET-01 under [TODO](../TODO.md).
 
-Evidence: [E012](QKB_INDEX.md#e012), [E409](QKB_INDEX.md#e409), [E368](QKB_INDEX.md#e368).
+Evidence: [E012](../QKB_INDEX.md#e012), [E409](../QKB_INDEX.md#e409), [E368](../QKB_INDEX.md#e368).
 
 ## Reachable same-owner alias target was reclaimed — root cause reproduced and guarded; physical acceptance open
 
@@ -583,7 +583,7 @@ The VPCD batch fixture must drain with status APDU `00000D`, not new request `00
 One/four replacements pass with 2/6 collector calls and 10/40 records erased; assert both counts and per-call limit.
 Physical response timing, actual interruption recovery and long-suite acceptance remain open.
 
-Evidence: [E001](QKB_INDEX.md#e001), [E426](QKB_INDEX.md#e426), [E427](QKB_INDEX.md#e427), [E428](QKB_INDEX.md#e428).
+Evidence: [E001](../QKB_INDEX.md#e001), [E426](../QKB_INDEX.md#e426), [E427](../QKB_INDEX.md#e427), [E428](../QKB_INDEX.md#e428).
 
 ## Persistent reclamation roots — fail closed; focused host evidence
 
@@ -595,7 +595,7 @@ Tests demonstrate rooted peer objects survive while an orphan is erased, plus sh
 The production reclaimer participates in 1,000 modeled flash cuts; modeled cuts and a single-owner physical hook
 are not physical multi-owner power-loss acceptance. PERSIST-01/02/03 gates still apply.
 
-Evidence: [E372](QKB_INDEX.md#e372), [E373](QKB_INDEX.md#e373), [E412](QKB_INDEX.md#e412), [E414](QKB_INDEX.md#e414), [E384](QKB_INDEX.md#e384).
+Evidence: [E372](../QKB_INDEX.md#e372), [E373](../QKB_INDEX.md#e373), [E412](../QKB_INDEX.md#e412), [E414](../QKB_INDEX.md#e414), [E384](../QKB_INDEX.md#e384).
 
 ## Foreign-reference GC cycles — coordinated tracing, acceptance open
 
@@ -605,7 +605,7 @@ Host tests cover cycles/diamonds, repeated collection, cached static/proxy roots
 Ambiguous duplicate package contexts and incomplete target-context enumeration fail closed.
 Physical reset/deletion, broader context edge cases and bounded actual RAM measurements remain RV-20261106-59 gates.
 
-Evidence: [E418](QKB_INDEX.md#e418), [E419](QKB_INDEX.md#e419), [E421](QKB_INDEX.md#e421).
+Evidence: [E418](../QKB_INDEX.md#e418), [E419](../QKB_INDEX.md#e419), [E421](../QKB_INDEX.md#e421).
 
 ## Host filesystem edit relocation — viable fix for IO_LOCKED
 
@@ -615,7 +615,7 @@ and use normal `write()` allocation/replacement. Regression verifies reinitializ
 `IO_LOCKED=129` is distinct from `OutOfFlash=1`; do not map both to NO_RESOURCE.
 The 414-command current-profile replay passes; this fixes one failure, not RESOURCE-01 overall.
 
-Evidence: [E011](QKB_INDEX.md#e011).
+Evidence: [E011](../QKB_INDEX.md#e011).
 
 ## Host compaction tracing overhead — confirmed fix and measurement
 
@@ -626,7 +626,7 @@ Preserve flash AND/boundary behavior, failure injection and emulator MPU checks;
 The earlier “probable cause” and 43–102-second timings are superseded for this optimized host path,
 not measurements of physical Pico flash.
 
-Evidence: [E405](QKB_INDEX.md#e405).
+Evidence: [E405](../QKB_INDEX.md#e405).
 
 ## Persistent arrays and transaction performance — measured scope
 
@@ -638,7 +638,7 @@ It showed **no physical speedup**: cached arraylength 4.799–4.845 s versus 4.5
 mixed access 1.559–1.596 s versus 1.553–1.593 s. Invalidate on rollback and tag changes.
 Do not equate fewer calls with lower end-to-end latency.
 
-Evidence: [E406](QKB_INDEX.md#e406), [E407](QKB_INDEX.md#e407).
+Evidence: [E406](../QKB_INDEX.md#e406), [E407](../QKB_INDEX.md#e407).
 
 ## Durable identity and rollback — reusable invariants
 
@@ -657,7 +657,7 @@ on `fs_sync()` can conceal a rollback that reports success while leaving the dur
 regression now checks failure quarantine and retry, plus simulated cold reset to the previous committed state.
 This is host/integration evidence; physical failure/recovery remains unverified. See [R44](../TODO.md#open-review-acceptance--2026-11-06).
 
-Evidence: [E061](QKB_INDEX.md#e061), [E060](QKB_INDEX.md#e060), [E397](QKB_INDEX.md#e397), [E401](QKB_INDEX.md#e401), [E402](QKB_INDEX.md#e402).
+Evidence: [E061](../QKB_INDEX.md#e061), [E060](../QKB_INDEX.md#e060), [E397](../QKB_INDEX.md#e397), [E401](../QKB_INDEX.md#e401), [E402](../QKB_INDEX.md#e402).
 
 ## Overlay capacity and package deletion — distinguish live data from tombstones
 
@@ -668,7 +668,7 @@ Cross-store INSTALL/DELETE publication needs journal/replay/rollback at real dur
 Simulated cuts, warm resets and firmware reflash do not demonstrate actual USB power-loss recovery.
 After failed DELETE, reconcile retained runtime contexts and stale routes as well as durable registry state.
 
-Evidence: [E131](QKB_INDEX.md#e131), [E058](QKB_INDEX.md#e058), [E030](QKB_INDEX.md#e030), [E228](QKB_INDEX.md#e228).
+Evidence: [E131](../QKB_INDEX.md#e131), [E058](../QKB_INDEX.md#e058), [E030](../QKB_INDEX.md#e030), [E228](../QKB_INDEX.md#e228).
 
 ## SIO/firewall ownership — implemented scope and limits
 
@@ -681,7 +681,7 @@ Foreign static/array/instance retention has scoped support, not blanket cross-co
 Collect retained heaps before checking DELETE edges so unreachable registry entries do not falsely block deletion;
 persistent alias scans must still protect real references. Complete CTX-01/03 acceptance before broadening support.
 
-Evidence: [E113](QKB_INDEX.md#e113), [E116](QKB_INDEX.md#e116), [E044](QKB_INDEX.md#e044), [E337](QKB_INDEX.md#e337), [E359](QKB_INDEX.md#e359).
+Evidence: [E113](../QKB_INDEX.md#e113), [E116](../QKB_INDEX.md#e116), [E044](../QKB_INDEX.md#e044), [E337](../QKB_INDEX.md#e337), [E359](../QKB_INDEX.md#e359).
 
 ## SensitiveResult — publish only valid successful results
 
@@ -691,7 +691,7 @@ Digest/Cipher/Signature and other enabled producers have focused interpreted SIO
 object results must remain roots until reset. Native simulation and applet execution are separate evidence.
 Unsupported Checksum/AEAD providers do not count as covered producers. CTX-02 and RV-20261106-25 retain physical/conversion gaps.
 
-Evidence: [E068](QKB_INDEX.md#e068), [E069](QKB_INDEX.md#e069), [E070](QKB_INDEX.md#e070), [E055](QKB_INDEX.md#e055).
+Evidence: [E068](../QKB_INDEX.md#e068), [E069](../QKB_INDEX.md#e069), [E070](../QKB_INDEX.md#e070), [E055](../QKB_INDEX.md#e055).
 
 ## Crypto key/session lifecycle and dispatch — scoped fixes
 
@@ -703,7 +703,7 @@ For CRT signatures, check component length before resolving a possibly null modu
 Use native C++ dispatch; supplied upstream CAPs remain unchanged. Consult the catalog for algorithm-specific reasons,
 key-size/cofactor limits, digest continuation and reference-vector controls.
 
-Evidence: [E049](QKB_INDEX.md#e049), [E052](QKB_INDEX.md#e052), [E048](QKB_INDEX.md#e048), [E188](QKB_INDEX.md#e188), [E005](QKB_INDEX.md#e005).
+Evidence: [E049](../QKB_INDEX.md#e049), [E052](../QKB_INDEX.md#e052), [E048](../QKB_INDEX.md#e048), [E188](../QKB_INDEX.md#e188), [E005](../QKB_INDEX.md#e005).
 
 ## CAP parsing and interpreter hardening — defended paths, acceptance gaps
 
@@ -724,7 +724,7 @@ dynamic package table. `missing-library-dependency` in the RMI VPCD suite is
 the regression; expected failure is `6A88`, while valid staged loading and
 install remain supported.
 
-Evidence: [E037](QKB_INDEX.md#e037), [E039](QKB_INDEX.md#e039), [E301](QKB_INDEX.md#e301), [E403](QKB_INDEX.md#e403).
+Evidence: [E037](../QKB_INDEX.md#e037), [E039](../QKB_INDEX.md#e039), [E301](../QKB_INDEX.md#e301), [E403](../QKB_INDEX.md#e403).
 
 ## CCID routing, responses and reset — preserve recovery
 
@@ -734,7 +734,7 @@ Logical power-off is a reset boundary: clear both transient classes, transaction
 An unauthenticated stale SCP03 session must not divert ordinary applet APDUs; protected manager operations still require authentication.
 The post-GPPro-disconnect AES prepare regression passes on hardware. Keep broader power-loss/transport gates open.
 
-Evidence: [E308](QKB_INDEX.md#e308), [E309](QKB_INDEX.md#e309), [E351](QKB_INDEX.md#e351), [E424](QKB_INDEX.md#e424).
+Evidence: [E308](../QKB_INDEX.md#e308), [E309](../QKB_INDEX.md#e309), [E351](../QKB_INDEX.md#e351), [E424](../QKB_INDEX.md#e424).
 
 ## Build, converter and profile provenance — viable controls
 
@@ -746,7 +746,7 @@ Standalone allocation linkage was repaired during testing-data migration; separa
 The historical Rust FS workaround omits the default allocator feature to avoid obsolete `lock_api` nightly `const_fn`;
 use the repository workflow rather than invoking compiler binaries directly.
 
-Evidence: [E349](QKB_INDEX.md#e349), [E124](QKB_INDEX.md#e124), [E071](QKB_INDEX.md#e071), [E340](QKB_INDEX.md#e340), [E341](QKB_INDEX.md#e341), [E395](QKB_INDEX.md#e395).
+Evidence: [E349](../QKB_INDEX.md#e349), [E124](../QKB_INDEX.md#e124), [E071](../QKB_INDEX.md#e071), [E340](../QKB_INDEX.md#e340), [E341](../QKB_INDEX.md#e341), [E395](../QKB_INDEX.md#e395).
 
 Shared PC ROM/JNI/profile outputs are written by both `tools/build` and
 standalone `tools/build-pc`. Both wrappers now serialize through
@@ -785,7 +785,7 @@ Windows PRESENT/MUTE and certutil card-type mapping are distinct from Linux APDU
 CPLC OS release date is not a build timestamp: the current two equipment-ID fields encode a 64-bit source commit prefix
 (see handoff/progress), superseding historical advice to rewrite release dates for each build.
 
-Evidence: [E300](QKB_INDEX.md#e300), [E072](QKB_INDEX.md#e072), [E079](QKB_INDEX.md#e079), [E145](QKB_INDEX.md#e145).
+Evidence: [E300](../QKB_INDEX.md#e300), [E072](../QKB_INDEX.md#e072), [E079](../QKB_INDEX.md#e079), [E145](../QKB_INDEX.md#e145).
 
 ## Acceptance evidence — version, backend and completion matter
 
@@ -797,7 +797,7 @@ Do not classify expected NO_SUCH_ALGORITHM as a failure or silently relabel wron
 Old “3072” rows that actually request 4096 are fixture/version-specific evidence; do not edit supplied CAPs to hide mismatches.
 Archive all measurements and corrections; current remaining work belongs in [TODO](../TODO.md), not duplicate campaign diaries here.
 
-Evidence: [E092](QKB_INDEX.md#e092), [E276](QKB_INDEX.md#e276), [E277](QKB_INDEX.md#e277), [E278](QKB_INDEX.md#e278).
+Evidence: [E092](../QKB_INDEX.md#e092), [E276](../QKB_INDEX.md#e276), [E277](../QKB_INDEX.md#e277), [E278](../QKB_INDEX.md#e278).
 
 ## GPPro DELETE timeout followed by PC/SC loss — unresolved observation (2026-11-12)
 

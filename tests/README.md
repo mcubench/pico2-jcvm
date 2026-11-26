@@ -1,77 +1,57 @@
 # Tests and validation fixtures
 
-Run tests through the stable `tools/test-*` wrappers from the repository root.
-Test implementations live in `unit/`, `integration/` and `hardware/`.
-Repository-owned applet/fixture sources live in `fixtures/local/`.
+Use the stable `tools/test-*` wrappers from the repository root. Tests live in
+`unit/`, `integration/`, and `hardware/`. Repository-owned applet sources
+live in `fixtures/local/`. Put generated tests, CAPs and images under
+`build/`, logs and results under `artifacts/`, and SDKs and converters under
+`.local-toolchain/`. See [testing-data migration](../docs/testing-data-migration.md)
+for original distributions and provenance.
 
-`fixtures/external/` contains immutable, supplied validation assets:
+## JCAlgTest inputs
 
-- JCAlgTest **1.8.5** CAP (`external/jcalgtest/1.8.5/AlgTest_v1.8.5_jc305.cap`,
-  Java Card Classic 3.0.5, user-supplied 2026-11-18), the only CAP to use for new runs;
-  the historical 1.8.4 CAP and 1.8.4 client (evidence only),
-  the earlier supplied 1.8.5 host clients (`b6a753be…`, `724bda75…`), and the
-  **1.8.5-20261121 host client** (`jcalgtest.client.1.8.5-20261121`, SHA-256
-  `3cca70cb…a703`, user-supplied 2026-11-21 14:50), the client for new runs.
-- JCAlgTest **1.8.6/jc32** PQC test pair (`external/jcalgtest/1.8.6/`, user
-  directive 2026-11-25): `AlgTest_v1.8.6_jc32.cap` (`jcalgtest.cap.1.8.6-jc32`,
-  CAP 2.3 built with the SDK 26.1 converter) and its client
-  (`jcalgtest.client.1.8.6`). Built here from the user's AlgTest sources plus
-  `algtest-1.8.6-jc32-pqc.diff`; adds ML-KEM/ML-DSA support tests. Run it in
-  addition to the unchanged 1.8.5/jc305 pair, which stays the default and the
-  acceptance baseline: `JCALGTEST_VARIANT=jc32 ./tools/test-jcalgtest-support-vpcd`.
-- The independent Java Card API validation suite, snapshot
-  `provided-20261107`, including all 48 CAPs and its own client/runner.
+- **Baseline for all new 3.0.5 runs.** The unchanged 1.8.5/jc305 CAP
+  (`./tools/fixture-path jcalgtest.cap`, GETVERSION `1.8.5_jc305`,
+  SHA-256 `fa64582e0dc968f7440434f01851c1aa72b57821e099fb08091dae32521b48fb`)
+  and client `jcalgtest.client.1.8.5-20261121` (SHA-256
+  `3cca70cbc243a773b998fa43792a135e26934d4bf616e7baa88c5369db18a703`).
+  Pass this client explicitly for focused and full runs, including VPCD.
+  The generic `jcalgtest.client` key still selects historical 1.8.4.
+- **Supplemental 3.2 preview.** Use CAP key `jcalgtest.cap.1.8.6-jc32`
+  and client key `jcalgtest.client.1.8.6`. See the
+  [1.8.6 fixture notes](fixtures/external/jcalgtest/1.8.6/README.md).
+  Run `JCALGTEST_VARIANT=jc32 ./tools/test-jcalgtest-support-vpcd`.
+  Both CAPs share package and applet AIDs. Delete the installed variant
+  before switching and restore 1.8.5/jc305 after board testing.
+- **Historical inputs.** Preserve 1.8.2, 1.8.4, and earlier 1.8.5 results under
+  their original identities. Existing campaigns may finish with their
+  original client. The 1.8.4 client did not deliver INS_CARD_RESET because
+  of a negative APDU length bug. The current baseline CAP fixes the RSA
+  NOPAD setup input. For simulator comparisons, the 1.8.5-client reference
+  used the 1.8.4/jc305 CAP and applies to support probing only.
 
-`fixtures/manifest.json` selects the baseline and records original paths,
-versions, byte counts and SHA-256 hashes. Resolve assets with
-`./tools/fixture-path jcalgtest.cap` (or `jcalgtest.client`, `api.caps`,
-`api.client`, `api.runner`, `api.gp`). Verify the complete supplied set with
-`./tools/fixture-path --verify`. Python tests share `fixtures/paths.py`.
-Run `tools/run-api-test --list` to inspect the supplied API suite's plan.
+Keep supplied CAP/JAR bytes unchanged. Run `./tools/fixture-path --verify`
+before acceptance. The [manifest](fixtures/manifest.json) pins paths and hashes.
+Record the CAP version and client hash separately. CSV version labels can be
+wrong, and evidence without the client hash does not count for acceptance.
 
-Keep input CAP/JAR bytes unchanged. Extracted LOAD components, compiled tests,
-generated test CAPs and card images belong under ignored `build/` directories.
-Logs, measurements and result CSVs belong under `artifacts/`; old results keep
-their original applet version and do not establish 1.8.5 CAP acceptance.
-Legacy 1.8.2 assets/reference CSVs are explicitly under
-`fixtures/external/jcalgtest/legacy/1.8.2/`, never selected by default.
+## Physical campaigns
 
-Supplied converters/SDKs are toolchain dependencies, provisioned at
-`.local-toolchain/java-card/provided/` in this workspace. They are not test
-fixtures. The original provided tree is archived during migration so no
-source, older artifact, or result is discarded. See
-`docs/testing-data-migration.md` for the inventory and migration evidence.
-
-Simulator/card comparison input lives under `fixtures/reference/`. Both 1.8.4-
-and 1.8.5-client simulator references are preserved under versioned directories;
-new comparisons use the 1.8.5-client reference (generated with the 1.8.4_jc305
-applet; the 1.8.5 CAP changes only performance-test code and the version
-string, not algorithm support probing). The CSV self-reported client version is not authoritative; identify the
-host JAR by its pinned hash in the fixture manifest.
-The original distribution is preserved at
-`artifacts/backups/testing-data-migration-20261107/AlgTest_JavaCard/`.
-See `docs/testing-data-migration.md` for checks and accepted follow-ups.
-
-## Worker instruction: JCAlgTest client is always 1.8.5 (2026-11-12, extended 2026-11-14)
-
-Use the supplied 1.8.5 host client for every new JCAlgTest run: option 1 (all
-algorithms), option 2 (performance), and short or focused, VPCD and physical
-runs. The historical 1.8.4 client is evidence only. Its
-`INS_CARD_RESET` did not reach the card (negative APDU length bug), so object
-deletion was never triggered. Use the unchanged user-supplied 1.8.5/jc305 CAP
-(user directive 2026-11-18), which `./tools/fixture-path jcalgtest.cap` now resolves; the
-1.8.4/jc305 CAP (`jcalgtest.cap.1.8.4`) is historical evidence only. Select the client explicitly:
+Follow [AGENTS.md](../AGENTS.md) for host access, normal max_crypto and
+empty-card acceptance. Use the exact reader and an explicit client override:
 
 ```bash
 PICO2_HOST_USB_ACCESS=1 ./tools/run-jcalgtest \
-  --client-jar tests/fixtures/external/jcalgtest/1.8.5/client/AlgTestJClient_v1.8.5.jar \
+  --client-jar "$(./tools/fixture-path jcalgtest.client.1.8.5-20261121)" \
   --reader-name '<exact identified PC/SC reader name>'
 ```
 
-Run physical commands through elevated host execution as required by
-`AGENTS.md`. Preserve per-device telemetry and record the client hash, CAP
-version, chip ID and firmware hash. Do not interrupt existing campaigns merely
-to change their client; keep their original provenance.
+Prioritize option 2 **PERFORMANCE TEST** (all JC API methods, 256-byte data,
+1–3 hours) and option 1 **All algorithms** (5–8 hours). Use different
+identified tokens when possible. A run starts when the client connects to the
+exact physical reader. Record reader name, chip ID, firmware hash, CAP version
+and client hash. Keep per-token result directories and serial logs. Continue
+on another available token after a stall or loss, with separate evidence.
+Windows results are independent of physical Linux validation.
 
 With object deletion enabled, runtime emits one
 `OBJECT_DELETION:PRE_CLEANUP` line before each persistent reclamation pass.
@@ -81,15 +61,10 @@ aggregates the peak and fails if telemetry is absent, malformed, inconsistent,
 or ever exceeds 90% of the arena. The VPCD JCAlgTest runner invokes this gate
 when `JCALGTEST_OBJECT_DELETION=1` and saves its summary as `headroom.log`.
 
-Scripts and the catalog are unchanged: `fixture-path jcalgtest.client` still
-selects 1.8.4, so pass the explicit override above. Any wrapper lacking a client
-override still uses its old default; do not label its output as a 1.8.5 run.
-`fixture-path --verify` checks the existing catalog, not the new JAR; verify it
-separately against the SHA-256 in
-[the 1.8.5 fixture README](fixtures/external/jcalgtest/1.8.5/README.md).
-The relative `client/lib` link reuses the preserved supplied dependencies.
-Client execution and CAP compatibility remain to be validated by a testing worker.
+## Independent Java Card API suite
 
-The new JAR has no `algtestjclient.ApiTestJClient` entry point. Continue using
-the independent API suite's own `AlgTestJClient.jar` for `tools/run-api-test`
-and `tools/run-deploy-parallel`.
+Use snapshot `provided-20261107`, including its own CAP variants and client.
+Resolve `api.caps`, `api.client`, `api.runner`, and `api.gp` with
+`./tools/fixture-path`. Use `tools/run-api-test --list` for the suite plan.
+The JCAlgTest host client does not provide the API suite entry point used by
+`tools/run-api-test` and `tools/run-deploy-parallel`.

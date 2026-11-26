@@ -2,14 +2,15 @@
 
 ## Compatibility target
 
-CHOUPI targets the Java Card Classic 3.0.5 API and accepts CAP 2.1 and CAP 2.2
-input formats where their components are implemented by the loader. The Pico 2
+CHOUPI uses Java Card Classic 3.0.5 as its acceptance baseline and accepts
+CAP 2.1 and CAP 2.2 input formats where their components are implemented by the loader. The Pico 2
 executes native JCVM code that interprets CAP bytecode. Java source and Java
 `.class` files are build inputs for generating the host-side ROM mask; they are
 not firmware programs and are never executed by the card.
 
-This is a compatibility target, not a claim of complete Java Card 3.0.5
-specification conformance. Applets must be converted against the API packages
+The [Java Card 3.2 preview subset](#java-card-32-preview-post-quantum-api)
+supplements this baseline. Full conformance to either version remains
+unverified. Applets must be converted against the API packages
 present in the ROM mask, and any dynamically loaded package must have all of
 its imports resolved at installation.
 

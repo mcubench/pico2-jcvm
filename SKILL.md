@@ -1,6 +1,6 @@
 ---
 name: rp2350-development
-description: Developing, optimizing and testing firmware on RP2350 / Pico 2 and derivative boards, in C (pico-sdk), Rust (rp235x-hal) or Arduino (arduino-pico), on both Cortex-M33 and Hazard3 RISC-V cores. Covers board identification and flashing, silicon errata and performance behaviour, and the experiment discipline that makes results trustworthy. Use when bringing up an unfamiliar RP2350 board, writing or debugging its firmware, chasing throughput, or running an overclock campaign.
+description: Develop, optimize, and validate the Cortex-M33 Java Card VM on Raspberry Pi Pico 2. Covers board identity, silicon behavior, and measurement discipline.
 ---
 
 # RP2350 / Pico 2 development
@@ -29,33 +29,12 @@ measurement finds that; only method does.
 3. **Apply method continuously.** It tells you nothing about the hardware; it
    tells you whether your conclusions survive.
 
-## Compilation
+## Repository workflow
 
-For the repository's concrete ARM and Hazard3 build commands, dependency lookup,
-and artifact paths, use [the compilation guide](reference/compilation.md).
-The repository `AGENTS.md` build and flashing rules remain authoritative.
-
-## Java Card runtime boundary
-
-The Pico 2 firmware is the native Java Card VM. It interprets installed CAP
-files; it does not run `.java` or `.class` programs as firmware. Implement
-Java Card API behavior and cryptographic algorithms in native C++ VM code and
-expose it through the VM's native API dispatch. Do not add Java provider or
-adapter implementations to the firmware, and do not create or alter CAP files
-to implement algorithms. Existing upstream CAPs may be used to exercise the
-native API implementation.
-
-## Multi-board physical testing
-
-When multiple identified Pico 2 boards are attached and available for testing,
-treat them as a failover pool. If a board becomes unavailable, fails to
-enumerate, or stops responding after a flash, record that board-level failure
-and move the next test to another available board without waiting for the first
-one to recover. For parallel runs, keep scheduling work on the remaining
-usable boards when one worker/device fails. Reconfirm each board's identity
-before flashing or attributing results; record identity, image, and outcome
-separately, and retain the failed board's logs. Resume the unavailable board
-only after it becomes accessible again.
+Follow [AGENTS.md](AGENTS.md) for the ARM-only build gate, native VM boundary,
+hardware safety and campaign rules. Use [the compilation guide](reference/compilation.md)
+for wrapper details and [the physical-token procedure](reference/physical-token-access/SKILL.md)
+for diagnostics.
 
 ## The two checks that catch the most
 
@@ -71,7 +50,7 @@ figure quoted without qualification becomes a fact in the next person's hands.
 - [ ] Board, package and revision established from vendor documentation or the
       physical part — not inferred from an undocumented register
 - [ ] Real flash size declared in the build, not inherited from a board header
-- [ ] Both ISAs build warning-free, if source is shared
+- [ ] The repository ARM build passes without warnings
 - [ ] Expected image visibly flashed, identity verified in the boot record
 - [ ] Correctness suite and independent oracle pass **at this operating point**
 - [ ] Serial capture complete, ordered, identity-matched

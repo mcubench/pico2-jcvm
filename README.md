@@ -143,6 +143,11 @@ The 3.2 preview subset includes `javacardx.crypto.kem` for ML-KEM operations, `j
 - [Persistence and filesystem](docs/FILESYSTEM_ABI.md)
 - [Active tasks](TODO.md), [progress](progress.md), and [agent handoff](.agent/HANDOFF.md)
 
+For product requirements see [SPEC.md](SPEC.md). Development rules live in
+[AGENTS.md](AGENTS.md), open work in [TODO.md](TODO.md), and dated evidence in
+[progress.md](progress.md). The [original port plan](docs/archive/plan.md)
+records the initial scope.
+
 ## Test organization
 
 1. The [JCAlgTest applet CAP](tests/fixtures/external/jcalgtest/1.8.5) and its pinned host client.
