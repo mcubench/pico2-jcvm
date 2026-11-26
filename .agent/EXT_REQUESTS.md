@@ -1,5 +1,21 @@
 # External validation requests
 
+## WIN-ECTESTER-39FD4199-20261126 — ExtendedLength on Pico 2
+
+Created 2026-11-26 16:27 CET. Use a dedicated test Pico 2. The normal ARM
+max_crypto empty-card image clears applet storage and has CPLC source ID
+`39FD41995AB86A6A`.
+
+- [ECTester Windows ZIP](../build/external-test/pico2-jcvm-ectester-39fd4199_20261126.zip), SHA-256 `ca09f5fae60d2f5cd62386ec9771ce729688a3fffa40e87c4b44fdd76789a356`. Follow the packaged README and return the reports, reader name, chip ID, input hashes and any disconnects, resets or timeouts.
+- [JCAlgTest Windows ZIP](../build/external-test/pico2-jcvm-maxcrypto-39fd4199_20261126.zip), SHA-256 `f5d0b09fac7cdfe98eef3b67d85db635685056ba987c8918d1f028a7652081df`. Use the same firmware for new baseline and PQC regression runs. Keep prior runs tied to their original image.
+- [Standalone UF2](../artifacts/firmware/pico2-jcvm-maxcrypto-39fd4199_20261126-empty-card.uf2), SHA-256 `fa15915809869cbdde7d37645a147edf3b00dd35aeb241dc09ddfc2c49ccf2ea`.
+
+The committed ARM build, archive checksums and erased storage were verified
+locally. The exact empty-card UF2 and Windows instructions await external
+validation. The ECTester package documents five suites. Seven negative
+suites remain pending separate authorization.
+
+
 ## WIN-KEYPAIR-107D7663-20261126 — Pico 2 Windows regression
 
 Created 2026-11-26 15:07 CET. Use this build for new Windows runs in place of

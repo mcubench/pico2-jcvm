@@ -34294,3 +34294,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Five physical ECTester suites completed on the initial extended firmware `4477dd87…306c` before the ROM token fix. Top-level successes/results: default 7/13, test-vectors 9/49, compression 5/20, miscellaneous 13/48, signature 23/23. Default completed after the initial 180 s timeout was raised to 1,500 s. The other seven entries prompted for explicit confirmation of the test-card denial-of-service risk. Automatic approval review rejected unattended physical execution without the user's explicit acceptance of that risk. No negative suite reached its tests.
 - Decision: The corrected build is installed and passes physical transport probes. Full ECTester coverage is pending user authorization for the seven negative suites. Evidence is from the development store. No empty-card acceptance image was flashed.
 - Artifacts/logs: `artifacts/results/ectester-22A9DEAAA3D09795/` (including `suite-summary.tsv`, `token-stable-cycle.log`, `token-stable-wire.log` and `token-stable-extended-response.log`); corrected normal UF2 SHA-256 `cebfc623b0f76714782da71d259730d6495460a18e1f61c07d752ce94e470897`, CPLC source ID `AA65EA940A342D55` (pre-commit build); CAP and reader hashes are in step `20261126-1521-extended-apdu`.
+
+## 2026-11-26 Package ExtendedLength firmware for external testing 2 min
+
+- Step-Id: `20261126-1625-ectester-external-package`
+- When: '2026-11-26 16:25 CET' - '2026-11-26 16:27 CET'
+- Model: `gpt-6`
+- Change: Built normal ARM max_crypto from `39fd4199` and made an empty-card UF2. Packaged the supplied unchanged ECTester CAP and Java 8 distribution with the exact-reader launcher, descriptor-preserving GPPro loader and Windows instructions. Also packaged the pinned JCAlgTest 1.8.5/jc305 and supplemental 1.8.6/jc32 pairs against the same image.
+- Validation: ARM build and fixture verification passed. Validated both ZIPs, both checksum manifests and all 4,096 erased storage blocks. This packaging step performed no hardware flash or Windows test.
+- Result: Standalone UF2 SHA-256 `fa15915809869cbdde7d37645a147edf3b00dd35aeb241dc09ddfc2c49ccf2ea`, CPLC `39FD41995AB86A6A`, size 3,197,440 bytes.
+- Decision: External request `WIN-ECTESTER-39FD4199-20261126` records how to run the packages and return results.
+- Artifacts/logs: `build/external-test/pico2-jcvm-{ectester,maxcrypto}-39fd4199_20261126.zip`, `artifacts/logs/ectester-external-{arm,package}.log`.
