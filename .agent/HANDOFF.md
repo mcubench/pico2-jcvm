@@ -5,6 +5,11 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
 
 ## Last observed physical state
 
+- Development token `22A9DEAAA3D09795` (reader suffix `03 00`) runs the
+  normal max_crypto existing-key RSA/EC domain candidate (UF2 `9b9dc2a1…9ccf`).
+  The JCMathLib CAP and the repository KeyPair regression probe are installed.
+
+
 - No campaign was recorded live after the 2026-11-21 T8 completion. Check
   live processes and USB identities again before hardware or PC/SC work.
 - 07E7 retained its campaign state and later exhausted storage during a
@@ -19,6 +24,13 @@ Updated 2026-11-24. See [TODO.md](../TODO.md) for active work and
   while available.
 
 ## Next work
+
+- WIN-B4ADBE13 RSA-CRT-2048 `6f00` (2026-11-26): not reproduced on the PC
+  overlay simulator (APDUs 1-7110, deletion ON) nor on EE11 (APDUs 3007-7110
+  over PC/SC, applet 1.8.5/jc305 already installed, ~72 KB store at the end).
+  Leading hypothesis: `Cipher.getInstance` NO_RESOURCE (uncaught by JCAlgTest
+  `prepare_class_Cipher`) on a fuller Windows store. EE11 now holds that
+  RSA key cache in its 1.8.5/jc305 applet. See progress `20261126-1615-rsacrt2048-6f00-repro`.
 
 - WIN-BE737F0E-6F00: the Windows be737f0e option-1 run reported 20 `6f00` in
   the RSA-CRT-4096 Cipher block (uncaught non-Crypto exception in JCAlgTest

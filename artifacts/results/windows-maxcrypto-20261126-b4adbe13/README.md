@@ -38,6 +38,8 @@ One run in two client segments writing the same CSV:
   when its last reader disappears). The log ends at the client's
   "re-insert the card" prompt. Without serial telemetry it is unknown whether
   the card reset (watchdog/fault) or only the USB/host path dropped.
+  The user stated on 2026-11-26 that the laptop had to be turned off, so this
+  drop was a host shutdown, not a card fault.
 - `ALGTEST_log_1795676295142.log` (segment 2, 569 methods): resumed from the
   client's already-measured list; the same Signature_sign prepare took
   270,666 ms and passed. Segment 2 has 0 reconnects and only

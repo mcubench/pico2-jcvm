@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tests/integration"))
 import pc_vpcd_multipackage_test as vpcd  # noqa: E402
-from cap_load_code import ensure_algtest_load_code  # noqa: E402
+from cap_load_code import build_algtest_load_code, ensure_algtest_load_code  # noqa: E402
 from fixture_paths import fixture_path  # noqa: E402
 
 APPLET_AID = bytes.fromhex("4A43416C675465737431")
@@ -128,7 +128,11 @@ def run(args: argparse.Namespace) -> int:
     if args.stop_after_apdu_index is not None and args.stop_after_apdu_index < 1:
         raise ValueError("--stop-after-apdu-index must be at least 1")
 
-    load_image = ensure_algtest_load_code(ROOT)
+    if args.cap is None:
+        args.cap = fixture_path(args.cap_asset, ROOT)
+    load_image = (ensure_algtest_load_code(ROOT) if args.cap_asset == "jcalgtest.cap"
+                  else build_algtest_load_code(ROOT, args.cap_asset,
+                                               f"{args.cap_asset}-load-code.bin"))
     parsed_code, package_aid, applets = vpcd.load_code(args.cap)
     if parsed_code != load_image.read_bytes():
         raise RuntimeError("extracted CAP load image differs from validated fixture")
@@ -332,7 +336,9 @@ def main() -> int:
     stop_group = parser.add_mutually_exclusive_group(required=True)
     stop_group.add_argument("--stop-after-apdu")
     stop_group.add_argument("--stop-after-apdu-index", type=int)
-    parser.add_argument("--cap", type=Path, default=fixture_path("jcalgtest.cap", ROOT))
+    # Fixture key of the CAP the transcript was recorded with (e.g. jcalgtest.cap.1.8.6-jc32).
+    parser.add_argument("--cap-asset", default="jcalgtest.cap")
+    parser.add_argument("--cap", type=Path, default=None)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--start-at-apdu", type=int, default=1)
     parser.add_argument("--resume-card", type=Path,
