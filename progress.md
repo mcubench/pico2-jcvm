@@ -34243,3 +34243,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: CPLC `107D76632F9151C1`, linked end `0x100860f8`, 499,464 bytes of firmware window remaining. The same firmware code passed targeted physical checks in step `20261126-1455-keypair-existing-rsa-ec-domain`.
 - Decision: Use this candidate for new external runs. Keep in-progress tests associated with their original firmware and clients.
 - Artifacts/logs: `build/external-test/pico2-jcvm-maxcrypto-107d7663_20261126.zip` SHA-256 `8472248b1c845244e1d98492ef407626c5382d31775d38a972c1002854851108`; `artifacts/firmware/pico2-jcvm-maxcrypto-107d7663_20261126-empty-card.uf2` SHA-256 `f50713873412313977d8ba0079a4a0f734230c28d25d10678bfaf53c25961e05`; `artifacts/logs/windows-keypair-{arm,package}-107d7663.log`.
+
+## 2026-11-26 ECTester installation on Pico 2 3 min
+
+- Step-Id: `20261126-1519-ectester-install-inv09`
+- Task: Install the supplied ECTester CAP and run all reader suites.
+- When: '2026-11-26 15:16 CET' - '2026-11-26 15:19 CET'
+- Model: `gpt-6`
+- Change: Attempted GlobalPlatformPro installation of the unchanged Java Card 2.2.2 CAP on the working development token. Used its existing normal max_crypto image and retained existing applet storage. Recorded the INV-09 decision request in `.agent/EXT_REQUESTS.md`.
+- Validation: Fixture verification passed (89 files). USB enumeration identified `22A9DEAAA3D09795`; GPPro used `Pico 2 CHOUPI CCID [JCVM CCID] (22A9DEAAA3D09795) 03 00`. LOAD completed with `9000`; INSTALL returned `6A88` with stage `0A` (missing imported package). CAP metadata imports `javacardx.apdu` 1.0 and the applet class implements `ExtendedLength`.
+- Result: The package was loaded and no applet instance was created. The distribution JAR starts under the repository Java 8 runtime and lists 11 suites. The thin JAR lacks Commons CLI and the distribution JAR fails during initialization under Java 17. No on-card suites ran.
+- Decision: Await an INV-09 decision for extended APDU support or a short-APDU applet/reader pair with the requested coverage. The installed image was retained and there was no new ARM build or flash.
+- Artifacts/logs: `artifacts/results/ectester-22A9DEAAA3D09795/install.log`; UF2 reported in handoff `9b9dc2a1ee524fe2fdf46e12c7dfc1483ce0c5810bc32b83f22eff7b9fd69ccf`; CAP SHA-256 `0b4d493607dd9d4ff0234fca344a6d086c606c90670b608fad2906a4afd6d708`; reader v0.3.3 (`b99057b`) distribution JAR SHA-256 `6b8281dbfa1967733150da42f8fc9477e00ceb75877f6fdabd6b6e4667106c7c`.

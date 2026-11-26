@@ -1,5 +1,18 @@
 # External validation requests
 
+## ECTESTER-INV09-20261126 — Extended APDU decision
+
+Created 2026-11-26 15:19 CET. Confirm whether to extend INV-09 for the
+supplied [ECTester 2.2.2 CAP](../inbox/ectester/ectester222.cap), or supply
+a short-APDU applet and matching reader that can run the required suites
+within INV-09.
+
+On 22A9, GPPro loaded the package, then INSTALL returned `6A88` at
+stage 10. The CAP imports `javacardx.apdu` and the applet implements
+`ExtendedLength`. The upstream Java Card instructions say some commands
+require extended APDUs. See the [install transcript](../artifacts/results/ectester-22A9DEAAA3D09795/install.log)
+and [upstream Java Card instructions](https://github.com/crocs-muni/ECTester#javacard-testing).
+
 ## WIN-KEYPAIR-107D7663-20261126 — Pico 2 Windows regression
 
 Created 2026-11-26 15:07 CET. Use this build for new Windows runs in place of
