@@ -34231,3 +34231,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: RSA, RSA-CRT, valid EC and invalid EC commands took 737, 412, 359 and 41 ms respectively. All four reported `sync_bytes=0 journal_bytes=0` for the probe's unreferenced test objects. Serial showed no faults. EC generation supports configured built-in curves with valid alternate generators. Custom curve groups, full transient/private-key lifecycle and the broader acceptance suites were not exercised.
 - Decision: Keep cross-applet crypto access deferred under CTX-01. Retain RV-20261106-58 for validation of initialized, mismatched and transient supplied keys.
 - Artifacts/logs: `artifacts/logs/keypair-domains-{arm,pc,vpcd,cycle,install,apdu,serial}.log`; normal UF2 SHA-256 `9b9dc2a1ee524fe2fdf46e12c7dfc1483ce0c5810bc32b83f22eff7b9fd69ccf`; CPLC source ID `E0614FC386DE5D23` (pre-commit development build); probe CAP SHA-256 `c6a5384cf35d09f21ff958393c25a439827369007f743123e7a0bb4d87ab60e2`.
+
+## 2026-11-26 Package the KeyPair fixes for external Windows testing (2 min)
+
+- Step-Id: `20261126-1506-windows-keypair-package`
+- Task: `WIN-KEYPAIR-107D7663-20261126`
+- When: '2026-11-26 15:06 CET' - '2026-11-26 15:08 CET'
+- Model: `gpt-6`
+- Change: Built normal max_crypto ARM firmware from `107d7663` and staged the Windows regression bundle. The ZIP, root folder and empty-card UF2 now use `pico2-jcvm-maxcrypto-<commit>_<date>` as the naming base. Corrected the bundled README's default test-key description and recorded Windows and JCMathLib replay instructions.
+- Validation: ARM wrapper passed without compiler warnings. The packager verified the pinned fixtures. Independently verified ZIP integrity, all 19 entries in the checksum manifest, the runner's UF2 filename and hash, and all 4,096 erased storage blocks. No flash or Windows runner execution was performed for this packaging step.
+- Result: CPLC `107D76632F9151C1`, linked end `0x100860f8`, 499,464 bytes of firmware window remaining. The same firmware code passed targeted physical checks in step `20261126-1455-keypair-existing-rsa-ec-domain`.
+- Decision: Use this candidate for new external runs. Keep in-progress tests associated with their original firmware and clients.
+- Artifacts/logs: `build/external-test/pico2-jcvm-maxcrypto-107d7663_20261126.zip` SHA-256 `8472248b1c845244e1d98492ef407626c5382d31775d38a972c1002854851108`; `artifacts/firmware/pico2-jcvm-maxcrypto-107d7663_20261126-empty-card.uf2` SHA-256 `f50713873412313977d8ba0079a4a0f734230c28d25d10678bfaf53c25961e05`; `artifacts/logs/windows-keypair-{arm,package}-107d7663.log`.

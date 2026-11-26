@@ -1,5 +1,48 @@
 # External validation requests
 
+## WIN-KEYPAIR-107D7663-20261126 — Pico 2 Windows regression
+
+Created 2026-11-26 15:07 CET. Use this build for new Windows runs in place of
+`WIN-PQC-PERF-58B5EC0A-20261125`. Keep results from already-started runs with
+their original firmware identity.
+
+- [Windows test ZIP](../build/external-test/pico2-jcvm-maxcrypto-107d7663_20261126.zip),
+  SHA-256 `8472248b1c845244e1d98492ef407626c5382d31775d38a972c1002854851108`, 18,536,214 bytes.
+- [Empty-card UF2](../artifacts/firmware/pico2-jcvm-maxcrypto-107d7663_20261126-empty-card.uf2),
+  SHA-256 `f50713873412313977d8ba0079a4a0f734230c28d25d10678bfaf53c25961e05`,
+  3,195,904 bytes, CPLC source ID `107D76632F9151C1`.
+
+This normal ARM max_crypto image contains the existing-key EC, RSA and RSA-CRT
+constructor fixes and the EC generation fix for preloaded domain parameters.
+Flashing the empty-card UF2 clears applet storage. Use a dedicated test Pico 2.
+
+Run the packaged PowerShell instructions for `pqc`, `pqcperf`, `all` and
+`symmetric`. Carry forward the timed GPPro uninstall check from the previous
+request after `all`. Return the result ZIPs, the uninstall transcript and
+elapsed time, and any disconnects, resets or timeouts. Include the reader name,
+chip ID and UF2 and client JAR hashes.
+
+For a focused JCMathLib replay on a freshly flashed card, copy the supplied
+[unit_tests.cap](../inbox/problem_jcmathlib/unit_tests.cap) and the
+[descriptor-preserving loader source](../tools/LoadCapWithDescriptor.java) into
+the extracted package. With a JDK and the exact reader name in `$reader`:
+
+```powershell
+javac -cp tools\gp.jar -d . LoadCapWithDescriptor.java
+java -cp ".;tools\gp.jar" LoadCapWithDescriptor $reader unit_tests.cap
+java -jar tools\gp.jar --reader $reader --apdu 00A404000B4A434D6174684C69625554 --apdu B024010020D0910DC146EC6027B9318706FD14D6D86199B1324AF4B9B13B4D7D1C09E89DDB00 --debug
+```
+
+Expected SELECT `9000`, then
+`684886E0A3763013DC98C3837E8A6B6C30CCD899257A5CD89DA6BE8E04F44EED 9000`.
+Return the complete APDU transcript. This variant uses a one-bit shift and
+includes Le. The original JCMathLib shift helper handles counts 0–7.
+
+The committed ARM build, archive checksums and erased storage were verified
+locally. The KeyPair and JCMathLib replays previously passed on Pico 2 with a
+development image from the same firmware code. This exact packaged UF2 and
+the Windows PowerShell runner were not executed locally.
+
 ## WIN-PQC-PERF-58B5EC0A-20261125 — Pico 2 firmware with JC 3.2 PQC (support and performance tests), SCP03 and all fixes since rc1
 
 Created 2026-11-25 22:18 CET at `b4adbe13`, repackaged 23:30 at `58b5ec0a` (the 1.8.6 client now reports version

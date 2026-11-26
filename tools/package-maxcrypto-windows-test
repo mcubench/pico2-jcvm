@@ -33,11 +33,11 @@ for flag in debug_heap_gc debug_ccid_applet debug_persistent_gc debug_fail_recla
   grep -qx "${flag}=OFF" "${provenance}" || die "${flag} is not OFF"
 done
 
-name="pico2-jcvm-maxcrypto-deletion-${head_short}"
+name="pico2-jcvm-maxcrypto-${head_short}_$(date +%Y%m%d)"
 stage_root="${repo_root}/build/external-test"
 stage="${stage_root}/${name}"
 zip_path="${stage_root}/${name}.zip"
-uf2_name="pico2-jcvm-max_crypto-object-deletion-on-empty-card-${head_short}.uf2"
+uf2_name="${name}-empty-card.uf2"
 uf2_artifact="${repo_root}/artifacts/firmware/${uf2_name}"
 
 cap="$("${repo_root}/tools/fixture-path" jcalgtest.cap)"
@@ -171,7 +171,7 @@ ${run_block}
 
 Return each \`results\\<mode>_<timestamp>.zip\` (client CSV/log, \`serial.log\`, GPPro output, \`run-identity.txt\`), and report any USB/PC/SC disconnects, resets, stalls, exceptions or timeouts. Keep each physical device's results separate.
 
-The project's all-zero GPPro test key is for educational testing only.
+The default GPPro test key (\`40 41 … 4F\`) is public and for educational testing only.
 EOF
 
 (
