@@ -86,6 +86,15 @@ def vectors() -> list[tuple[bytes, bytes, str]]:
             "RSA-CRT 4096-bit generation, signature, and cipher")):
         command = bytes((0x80, 0x1a, selector, 0, 0))
         results.append((command, b"\x01\x90\x00", label))
+    for selector, label in enumerate(("RSA", "RSA-CRT")):
+        results.append((bytes((0x80, 0x1a, selector, 1, 0)), b"\x01\x90\x00",
+                        f"{label} existing-key generation with exponent 17"))
+    for point, expected, label in (
+            (twice_generator, 1, "honors a preloaded generator"),
+            (b"\x04" + bytes(64), 0x11, "rejects an off-curve generator")):
+        command = bytes((0x80, 0x31, 0, 0, len(point))) + point + b"\x00"
+        results.append((command, bytes((expected, 0x90, 0x00)),
+                        f"EC KeyPair generation {label}"))
     rsa = _rsa_512_fixture()
     messages = {
         10: b"JCVM RSA PKCS1",

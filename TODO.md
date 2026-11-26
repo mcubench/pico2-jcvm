@@ -121,6 +121,7 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 
 ### CTX-01
 
+- [ ] Support crypto factory `externalAccess=true` for calls from a foreign applet context through authorized Shareable interfaces. Verify access, ownership, deselect/reset lifetime and isolation before advertising support (INV-19).
 - [ ] Finish firewall/SIO/proxy acceptance across foreign-value consumers, GC/reset/DELETE roots, stale owners and physical same-CAP/multipackage lifecycle. Include unchanged upstream Multi CAP coverage where available.
 
 ### CTX-02
@@ -236,7 +237,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-57 — Define and validate ECDSA with enabled transient EC private keys.** P2; owner: API-03 / PROFILE-01 / CTX-03. Native initialization currently accepts only persistent type 12. Support or disclose types 30/31 explicitly; compare identical complete key material across lifetimes/digests, independent verification, clear-event rejection and reinit. Validate downstream component use; keep optional-K handling separate. [R57](docs/archive/review_20261106.md#r57--p2-ecdsa-initialization-rejects-enabled-transient-ec-private-key-types)
 
-- [ ] **RV-20261106-58 — Implement or disclose the existing-key KeyPair constructor overload.** P2; owner: API-03 / PROFILE-01. Add supported behavior through native binding/VM code, preserving supplied references. Cover initialized/uninitialized compatible RSA/EC pairs, getter identity, mismatched sizes/algorithms, generation and transient-private variants. Current native generation/factory tests cover only algorithm/length construction. [R58](docs/archive/review_20261106.md#r58--p2-the-keypair-constructor-taking-existing-keys-remains-an-unbound-stub)
+- [ ] **RV-20261106-58 — Complete validation of the existing-key KeyPair constructor.** P2; owner: API-03 / PROFILE-01. The native overload supports EC FP, RSA, RSA-CRT and PQC. Pico 2 replay covers JCMathLib EC initialization and RSA/RSA-CRT generation with getter identity and exponent retention. Add focused coverage for mismatched sizes and algorithms, transient private-key lifetimes and construction from already initialized keys. [R58](docs/archive/review_20261106.md#r58--p2-the-keypair-constructor-taking-existing-keys-remains-an-unbound-stub)
 
 - [ ] **RV-20261106-59 — Prevent unreachable foreign-array cycles from becoming permanent GC roots.** P2; owner: PERSIST-01 / CTX-01 / HARD-01. Separate registry edges from reachable roots using a validated cross-heap lifetime strategy. Exercise two/three-heap cycles and diamonds with/without real roots, different collection orders, edge breaking, package deletion and handle reuse. Use production Context enumeration and measure reclaimed/live counts plus bounded repeated-work RAM growth while preserving live foreign references and owner collision isolation. [R59](docs/archive/review_20261106.md#r59--p2-foreign-array-root-routing-can-keep-an-unreachable-cross-heap-cycle-alive)
 

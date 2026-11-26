@@ -17,6 +17,7 @@ import javacard.security.KeyBuilder;
 import javacard.security.KeyAgreement;
 import javacard.security.KeyPair;
 import javacard.security.MessageDigest;
+import javacard.security.PrivateKey;
 import javacard.security.RSAPrivateCrtKey;
 import javacard.security.RandomData;
 import javacard.security.RSAPrivateKey;
@@ -177,7 +178,11 @@ public final class SymmCryptoProbe extends Applet {
       outputLength = (short)1;
     } else if (instruction == (byte)0x1a) {
       output = new byte[(short)1];
-      output[0] = runRsaKeyPair(algorithm);
+      output[0] = runRsaKeyPair(algorithm, operation != 0);
+      outputLength = (short)1;
+    } else if (instruction == (byte)0x31) {
+      output = new byte[(short)1];
+      output[0] = runEcKeyPairWithGenerator(input, inputLength);
       outputLength = (short)1;
     } else if (instruction == (byte)0x10) {
       output = (operation == 1 || operation == 5) && !isNoPadCipher(algorithm) &&
@@ -528,7 +533,39 @@ public final class SymmCryptoProbe extends Applet {
     }
   }
 
-  private static byte runRsaKeyPair(byte selector) {
+  private static byte runEcKeyPairWithGenerator(byte[] generator, short length) {
+    KeyPair pair = new KeyPair(KeyPair.ALG_EC_FP, KeyBuilder.LENGTH_EC_FP_256);
+    ECPublicKey publicKey = (ECPublicKey)pair.getPublic();
+    ECPrivateKey privateKey = (ECPrivateKey)pair.getPrivate();
+    publicKey.setG(generator, (short)0, length);
+    try {
+      pair.genKeyPair();
+    } catch (CryptoException exception) {
+      return (byte)(0x10 | exception.getReason());
+    }
+    byte[] actual = new byte[(short)65];
+    if (publicKey.getG(actual, (short)0) != length ||
+        Util.arrayCompare(generator, (short)0, actual, (short)0, length) != 0 ||
+        privateKey.getG(actual, (short)0) != length ||
+        Util.arrayCompare(generator, (short)0, actual, (short)0, length) != 0)
+      return (byte)0x20;
+    // Reuse the scalar with the default domain and independently compute sG.
+    KeyPair reference = new KeyPair(KeyPair.ALG_EC_FP, KeyBuilder.LENGTH_EC_FP_256);
+    reference.genKeyPair();
+    ECPrivateKey referenceKey = (ECPrivateKey)reference.getPrivate();
+    short scalarLength = privateKey.getS(actual, (short)0);
+    referenceKey.setS(actual, (short)0, scalarLength);
+    KeyAgreement agreement = KeyAgreement.getInstance((byte)6, false);
+    agreement.init(referenceKey);
+    short pointLength = agreement.generateSecret(generator, (short)0, length,
+        actual, (short)0);
+    byte[] publicPoint = new byte[(short)65];
+    return (byte)(publicKey.getW(publicPoint, (short)0) == pointLength &&
+        Util.arrayCompare(actual, (short)0, publicPoint, (short)0, pointLength) == 0
+        ? 1 : 0x21);
+  }
+
+  private static byte runRsaKeyPair(byte selector, boolean existingKeys) {
     byte algorithm;
     short size;
     switch (selector) {
@@ -544,7 +581,21 @@ public final class SymmCryptoProbe extends Applet {
     }
     KeyPair pair;
     try {
-      pair = new KeyPair(algorithm, size);
+      if (existingKeys) {
+        RSAPublicKey suppliedPublic = (RSAPublicKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_RSA_PUBLIC, size, false);
+        PrivateKey suppliedPrivate =
+            (PrivateKey)KeyBuilder.buildKey(
+                algorithm == KeyPair.ALG_RSA ? KeyBuilder.TYPE_RSA_PRIVATE
+                    : KeyBuilder.TYPE_RSA_CRT_PRIVATE, size, false);
+        pair = new KeyPair(suppliedPublic, suppliedPrivate);
+        if (pair.getPublic() != suppliedPublic || pair.getPrivate() != suppliedPrivate)
+          return (byte)0x18;
+        byte[] exponent = {17};
+        suppliedPublic.setExponent(exponent, (short)0, (short)1);
+      } else {
+        pair = new KeyPair(algorithm, size);
+      }
       pair.genKeyPair();
     } catch (CryptoException exception) {
       return (byte)(0x10 | exception.getReason());
@@ -561,8 +612,11 @@ public final class SymmCryptoProbe extends Applet {
       if (publicKey.getModulus(modulus, (short)0) != modulus.length ||
           modulus[0] >= 0) return (byte)0x21;
       byte[] exponent = new byte[(short)(size / 8)];
-      publicKey.getExponent(exponent, (short)0);
-      if (!containsNonzero(modulus) || exponent[(short)(exponent.length - 1)] != 1 ||
+      short exponentLength = publicKey.getExponent(exponent, (short)0);
+      if (!containsNonzero(modulus)) return (byte)0x21;
+      if (existingKeys) {
+        if (exponentLength != 1 || exponent[0] != 17) return (byte)0x21;
+      } else if (exponent[(short)(exponent.length - 1)] != 1 ||
           exponent[(short)(exponent.length - 2)] != 0 ||
           exponent[(short)(exponent.length - 3)] != 1) return (byte)0x21;
       if (algorithm == KeyPair.ALG_RSA) {

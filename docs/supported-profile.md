@@ -43,10 +43,11 @@ The RP2350 max_crypto build exposes `RandomData.ALG_TRNG` through both
 RandomData factories. The PC simulator reports this algorithm unavailable
 because it has no RP2350 entropy peripheral.
 
-Profiles with EC FP key-pair generation accept matching EC FP keys in
-`KeyPair(PublicKey, PrivateKey)` and retain the supplied key objects. EC key
-generation uses the built-in curve for the key size. RSA pair generation
-uses `KeyPair(byte, short)`.
+Profiles with EC FP, RSA or RSA-CRT key-pair generation accept matching keys
+in `KeyPair(PublicKey, PrivateKey)` and retain the supplied key objects. RSA
+generation retains a preloaded public exponent. EC generation validates
+preloaded public domain parameters against the built-in curve for the key
+size and supports an alternative generator on that curve.
 
 ### Java Card 3.2 preview post-quantum API
 

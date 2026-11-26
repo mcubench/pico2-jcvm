@@ -12,6 +12,7 @@
 #include "native_pqc.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <random>
@@ -52,6 +53,12 @@ constexpr uint8_t kTypeEcFpPrivateTransientDeselect = 31;
 constexpr uint8_t kTypeRsaPublic = 4;
 constexpr uint8_t kTypeRsaPrivate = 5;
 constexpr uint8_t kTypeRsaCrtPrivate = 6;
+#if JC_SUPPORT_KEYPAIR_RSA_ANY
+constexpr uint8_t kTypeRsaPrivateTransientReset = 22;
+constexpr uint8_t kTypeRsaPrivateTransientDeselect = 23;
+constexpr uint8_t kTypeRsaCrtTransientReset = 24;
+constexpr uint8_t kTypeRsaCrtTransientDeselect = 25;
+#endif
 
 uint16_t keyPairClassIndex() {
   const uint16_t token = Export_Handler(Package(ROM_PACKAGE_INDEX_JAVACARD_SECURITY))
@@ -109,6 +116,21 @@ bool rsaKeyPairEnabled(uint8_t algorithm, uint16_t bits) {
     default: return false;
   }
 #undef RSA_PAIR_CASE
+}
+
+uint8_t rsaPairAlgorithm(uint8_t privateType) {
+  switch (privateType) {
+  case kTypeRsaPrivate:
+  case kTypeRsaPrivateTransientReset:
+  case kTypeRsaPrivateTransientDeselect:
+    return kAlgorithmRsa;
+  case kTypeRsaCrtPrivate:
+  case kTypeRsaCrtTransientReset:
+  case kTypeRsaCrtTransientDeselect:
+    return kAlgorithmRsaCrt;
+  default:
+    return 0;
+  }
 }
 
 constexpr uint16_t kRsaComponentFields[] = {
@@ -170,10 +192,36 @@ struct ScopedRsaValues {
   }
 };
 
-void generateRsaPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
+void generateRsaPair(jref_t publicRef, jref_t privateRef, uint16_t bits,
+                     uint8_t algorithm) {
+  auto &heap = Context::getActiveContext().getHeap();
+  auto publicKey = heap.getInstance(publicRef);
+  auto privateKey = heap.getInstance(privateRef);
+  if (!publicKey || !privateKey) throw Exceptions::RuntimeException;
+  auto lengths = heap.getArray(publicKey->getField_Reference(
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_LENGTHS));
+  if (!lengths || lengths->getType() != JAVA_ARRAY_T_SHORT || lengths->size() < 2)
+    throw Exceptions::ArrayStoreException;
   ScopedRsaValues values;
-  if (mbedtls_mpi_lset(&values.e, 65537) != 0)
+  const jshort_t exponentLength = lengths->getShortEntry(1);
+  if (exponentLength != 0) {
+    auto exponent = heap.getArray(publicKey->getField_Reference(kRsaComponentFields[1]));
+    if (!exponent || exponent->getType() != JAVA_ARRAY_T_BYTE ||
+        exponentLength < 0 || exponentLength > exponent->size())
+      throw Exceptions::ArrayStoreException;
+    std::vector<uint8_t> bytes(exponentLength);
+    const uint16_t start = exponent->size() - exponentLength;
+    for (uint16_t i = 0; i < bytes.size(); ++i)
+      bytes[i] = exponent->getByteEntry(start + i);
+    if (mbedtls_mpi_read_binary(&values.e, bytes.data(), bytes.size()) != 0)
+      throwCryptoException(CryptoExceptionReason::IllegalUse);
+    if (mbedtls_mpi_cmp_int(&values.e, 3) < 0 ||
+        mbedtls_mpi_get_bit(&values.e, 0) == 0 ||
+        mbedtls_mpi_bitlen(&values.e) > bits)
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+  } else if (mbedtls_mpi_lset(&values.e, 65537) != 0) {
     throwCryptoException(CryptoExceptionReason::IllegalUse);
+  }
   bool ready = false;
   for (unsigned attempt = 0; attempt < 32 && !ready; ++attempt) {
     const size_t pBits = (bits + 1U) / 2U;
@@ -183,6 +231,7 @@ void generateRsaPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
         mbedtls_mpi_mul_mpi(&values.n, &values.p, &values.q) != 0)
       throwCryptoException(CryptoExceptionReason::IllegalUse);
     if (mbedtls_mpi_bitlen(&values.n) != bits ||
+        mbedtls_mpi_cmp_mpi(&values.n, &values.e) <= 0 ||
         mbedtls_mpi_cmp_mpi(&values.p, &values.q) == 0)
       continue;
     if (mbedtls_mpi_sub_int(&values.p1, &values.p, 1) != 0 ||
@@ -202,13 +251,10 @@ void generateRsaPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
   }
   if (!ready) throwCryptoException(CryptoExceptionReason::IllegalUse);
   const size_t width = (bits + 7U) / 8U;
-  auto publicKey = Context::getActiveContext().getHeap().getInstance(publicRef);
-  auto privateKey = Context::getActiveContext().getHeap().getInstance(privateRef);
-  if (!publicKey || !privateKey) throw Exceptions::RuntimeException;
   putRsaComponent(publicKey, 0, rsaMpiBytes(values.n, width));
-  putRsaComponent(publicKey, 1, rsaMpiBytes(values.e, width));
-  if (static_cast<uint8_t>(privateKey->getField_Byte(
-          ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE)) == kTypeRsaPrivate) {
+  if (exponentLength == 0)
+    putRsaComponent(publicKey, 1, rsaMpiBytes(values.e, width));
+  if (algorithm == kAlgorithmRsa) {
     putRsaComponent(privateKey, 0, rsaMpiBytes(values.n, width));
     putRsaComponent(privateKey, 1, rsaMpiBytes(values.d, width));
   } else {
@@ -245,6 +291,12 @@ struct ScopedKeyPair {
   }
 };
 
+struct ScopedPoint {
+  mbedtls_ecp_point value;
+  ScopedPoint() { mbedtls_ecp_point_init(&value); }
+  ~ScopedPoint() { mbedtls_ecp_point_free(&value); }
+};
+
 void putComponent(const std::shared_ptr<JC_Instance> &key, uint16_t index,
                   const std::vector<unsigned char> &bytes) {
   if (bytes.empty() || bytes.size() > UINT16_MAX)
@@ -276,11 +328,6 @@ void generateEcPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
   ScopedGroup group;
   if (native_ec::loadGroupForBits(group.value, bits) != 0)
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-  ScopedKeyPair pair;
-  if (mbedtls_ecp_gen_keypair(&group.value, &pair.privateValue,
-          &pair.publicValue, randomBytes, nullptr) != 0)
-    throwCryptoException(CryptoExceptionReason::IllegalUse);
-
   const size_t width = (bits + 7U) / 8U;
   const auto prime = mpiBytes(group.value.P, width);
   mbedtls_mpi curveA;
@@ -296,29 +343,58 @@ void generateEcPair(jref_t publicRef, jref_t privateRef, uint16_t bits) {
   const auto g = pointBytes(group.value, group.value.G, width);
   const size_t orderWidth = (mbedtls_mpi_bitlen(&group.value.N) + 7U) / 8U;
   const auto order = mpiBytes(group.value.N, orderWidth);
-  const auto w = pointBytes(group.value, pair.publicValue, width);
-  const auto s = mpiBytes(pair.privateValue, width);
-
   auto &heap = Context::getActiveContext().getHeap();
   auto publicKey = heap.getInstance(publicRef);
   auto privateKey = heap.getInstance(privateRef);
   if (!publicKey || !privateKey) throw Exceptions::RuntimeException;
-  putComponent(publicKey, 0, prime);
-  putComponent(publicKey, 1, a);
-  putComponent(publicKey, 2, b);
-  putComponent(publicKey, 3, g);
-  putComponent(publicKey, 4, order);
+
+  // The backend supports the built-in prime-order curves. Compare supplied
+  // curve parameters numerically and validate a supplied generator on the
+  // selected curve before using it for scalar multiplication.
+  constexpr auto cofactorField =
+      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK;
+  if (publicKey->getField_Short(cofactorField) > 1)
+    throwCryptoException(CryptoExceptionReason::IllegalValue);
+  const std::array defaults{prime, a, b, g, order};
+  auto domain = defaults;
+  std::array<bool, defaults.size()> supplied{};
+  ScopedPoint suppliedGenerator;
+  const mbedtls_ecp_point *generator = &group.value.G;
+  for (uint16_t i = 0; i < domain.size(); ++i) {
+    if (EcKeyStore::length(*publicKey, i) == 0) continue;
+    supplied[i] = true;
+    domain[i] = EcKeyStore::read(*publicKey, i);
+    if (i == 3) {
+      if (mbedtls_ecp_point_read_binary(&group.value, &suppliedGenerator.value,
+              domain[i].data(), domain[i].size()) != 0 ||
+          mbedtls_ecp_check_pubkey(&group.value, &suppliedGenerator.value) != 0)
+        throwCryptoException(CryptoExceptionReason::IllegalValue);
+      generator = &suppliedGenerator.value;
+    } else {
+      const auto significant = [](const auto &bytes) {
+        return std::find_if(bytes.begin(), bytes.end(),
+                            [](uint8_t byte) { return byte != 0; });
+      };
+      if (!std::equal(significant(domain[i]), domain[i].cend(),
+                      significant(defaults[i]), defaults[i].end()))
+        throwCryptoException(CryptoExceptionReason::IllegalValue);
+    }
+  }
+  ScopedKeyPair pair;
+  if (mbedtls_ecp_gen_keypair_base(&group.value, generator, &pair.privateValue,
+          &pair.publicValue, randomBytes, nullptr) != 0)
+    throwCryptoException(CryptoExceptionReason::IllegalUse);
+  const auto w = pointBytes(group.value, pair.publicValue, width);
+  const auto s = mpiBytes(pair.privateValue, width);
+
+  for (uint16_t i = 0; i < domain.size(); ++i) {
+    if (!supplied[i]) putComponent(publicKey, i, domain[i]);
+    putComponent(privateKey, i, domain[i]);
+  }
   putComponent(publicKey, 5, w);
-  putComponent(privateKey, 0, prime);
-  putComponent(privateKey, 1, a);
-  putComponent(privateKey, 2, b);
-  putComponent(privateKey, 3, g);
-  putComponent(privateKey, 4, order);
   putComponent(privateKey, 6, s);
-  publicKey->setField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK, 1);
-  privateKey->setField_Short(
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK, 1);
+  publicKey->setField_Short(cofactorField, 1);
+  privateKey->setField_Short(cofactorField, 1);
 }
 #endif
 } // namespace
@@ -378,7 +454,7 @@ void javacard_security_KeyPair_init(jref_t receiver, jref_t publicKey,
   uint8_t algorithm = kAlgorithmPqc;
   jshort_t keyLength = 0;
   if (!pqcCheckKeyPair(publicKey, privateKey)) {
-#if JC_SUPPORT_KEYPAIR_EC_FP
+#if JC_SUPPORT_KEYPAIR_EC_FP || JC_SUPPORT_KEYPAIR_RSA_ANY
     if (publicKey.isArray() || privateKey.isArray())
       throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
     auto &heap = Context::getActiveContext().getHeap();
@@ -398,18 +474,35 @@ void javacard_security_KeyPair_init(jref_t receiver, jref_t publicKey,
     constexpr auto sizeField = ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE;
     const uint8_t publicType = publicInstance->getField_Byte(typeField);
     const uint8_t privateType = privateInstance->getField_Byte(typeField);
+    keyLength = publicInstance->getField_Short(sizeField);
+    if (keyLength != privateInstance->getField_Short(sizeField))
+      throwCryptoException(CryptoExceptionReason::IllegalValue);
+    const auto bits = static_cast<uint16_t>(keyLength);
+#if JC_SUPPORT_KEYPAIR_EC_FP
     const bool ecPrivate = privateType == kTypeEcFpPrivate ||
                            privateType == kTypeEcFpPrivateTransientReset ||
                            privateType == kTypeEcFpPrivateTransientDeselect;
-    if (publicType != kTypeEcFpPublic && !ecPrivate)
+    if (publicType == kTypeEcFpPublic || ecPrivate) {
+      if (publicType != kTypeEcFpPublic || !ecPrivate)
+        throwCryptoException(CryptoExceptionReason::IllegalValue);
+      if (!native_ec::supportsBits(bits))
+        throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+      algorithm = kAlgorithmEcFp;
+    } else
+#endif
+    if (publicType == kTypeRsaPublic) {
+#if JC_SUPPORT_KEYPAIR_RSA_ANY
+      algorithm = rsaPairAlgorithm(privateType);
+      if (algorithm == 0)
+        throwCryptoException(CryptoExceptionReason::IllegalValue);
+      if (!rsaKeyPairEnabled(algorithm, bits))
+        throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
+#else
       throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-    keyLength = publicInstance->getField_Short(sizeField);
-    if (publicType != kTypeEcFpPublic || !ecPrivate ||
-        keyLength != privateInstance->getField_Short(sizeField))
-      throwCryptoException(CryptoExceptionReason::IllegalValue);
-    if (!native_ec::supportsBits(static_cast<uint16_t>(keyLength)))
+#endif
+    } else {
       throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-    algorithm = kAlgorithmEcFp;
+    }
 #else
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 #endif
@@ -460,7 +553,7 @@ void javacard_security_KeyPair_genKeyPair(jref_t receiver) {
 #if JC_SUPPORT_KEYPAIR_RSA_ANY
     if (!rsaKeyPairEnabled(algorithm, bits))
       throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
-    generateRsaPair(publicRef, privateRef, bits);
+    generateRsaPair(publicRef, privateRef, bits, algorithm);
 #else
     throwCryptoException(CryptoExceptionReason::NoSuchAlgorithm);
 #endif
