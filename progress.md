@@ -34195,3 +34195,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: segment 1 stopped during the RSA-CRT-4096 Signature_sign prepare (two key pairs) with host `SCARD_E_COMM_DATA_LOST` (0x8010002F), then 0x1b1 and `SCARD_E_SERVICE_STOPPED`; segment 2 resumed, the same prepare passed in 270,666 ms, 0 reconnects, only NO_SUCH_ALGORITHM (184). The six RSA-CRT-2048 `6f00` rows are all the INS 31 prepare (key generation): 2,155 ms then 73 ms on retry, six methods in a row; RSA-CRT 1984 and 3072 prepares pass.
 - Decision: two open items, both need serial telemetry: (1) RSA-CRT-2048 keygen `6f00`; (2) whether the segment-1 drop during RSA-CRT-4096 keygen was a card reset or a host/USB drop. No serial log, chip ID or JAR hash supplied.
 - Artifacts/logs: `ALGTEST_log_1795645670662.log` `43df2eed…7b76`, `ALGTEST_log_1795676295142.log` `fd3d4da9…3c70`
+
+## 2026-11-26 Diagnose JCMathLib F103 during first-command initialization (4 min)
+
+- Step-Id: `20261126-1435-jcmathlib-keypair-f103`
+- Task: `RV-20261106-58`
+- When: '2026-11-26 14:35 CET' - '2026-11-26 14:39 CET'
+- Model: `gpt-6`
+- Change: Traced the reported APDU through the unchanged supplied CAP and the max_crypto host ROM mask. The CAP embeds the JCOP4_P71 profile and defers initialization until its first command.
+- Validation: The RP2350-overlay VPCD replay reproduced SELECT `9000` and shift APDU `F103` on fresh emulator storage. The exception trace reports reason 3 at security Method PC 1018, whose ROM bytes invoke selector `0x0097` for `KeyPair(PublicKey, PrivateKey)`. CAP Method PC 4744 invokes the matching constructor via constant pool entry 136.
+- Result: During SecP256r1 initialization, `ECCurve.newKeyPair` passes existing EC keys to the native constructor, which only accepts PQC keys and throws `NO_SUCH_ALGORITHM` for this pair. `UnitTests.process` maps it to `F103` before dispatching the instruction. Independently, P1 = 16 exceeds the applet shift helper's documented 0–7 range.
+- Decision: Track existing-key EC support under RV-20261106-58 (INV-07 baseline compatibility gap). This is an analysis step. Firmware and CAP bytes were preserved. Physical firmware identity, hardware replay, and flash traffic were not measured.
+- Artifacts/logs: `artifacts/logs/jcmathlib-shift-analysis.log`; supplied CAP SHA-256 `9ad6debfcf7afb5c6cafc4d1ac598ce6c6e4397fe3cb415941ee18184c5ded3a`; emulator SHA-256 `8d6f9025a34201190c4f2b9d20f794b4a28bcd51df83576be406d2004b1f9b4b`; ROM mask SHA-256 `aa00c473d0a4095476cf0aa5a62622d0eef4ada6eed7dc509f71a016cef928d9`.
