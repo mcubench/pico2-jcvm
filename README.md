@@ -76,22 +76,22 @@ Host application → PC/SC → USB CCID → Card manager / JCRE
                                                       → Flash storage
 ```
 
-The compatibility target is **Java Card Classic 3.0.5**. Full specification conformance remains unverified.
+The compatibility baseline is **Java Card Classic 3.0.5**, with a **Java Card 3.2 preview subset** for ML-KEM and ML-DSA. JCAlgTest 1.8.5/jc305 remains the acceptance baseline, with 1.8.6/jc32 supplementing it for the preview APIs. Full conformance to either specification remains unverified.
 
 | Feature | Status | Coverage / limits |
 | --- | --- | --- |
-| CAP loading and bytecode interpretation | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Imports must resolve to API packages present in the firmware ROM mask. |
+| CAP loading and bytecode interpretation | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Accepts CAP 2.1/2.2 and Compact CAP 2.3 when the components and virtual method token mappings are compatible. Newer imports are accepted for selected ROM packages. Installation rejects references to unavailable API classes or methods. |
 | Applet lifecycle | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Installation, selection, and deletion. |
 | GlobalPlatform card management | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Tested SCP03 authentication (C-MAC, command encryption, R-MAC and response encryption), LOAD/INSTALL, SELECT, DELETE, GET DATA, GET STATUS and PUT KEY (`gp --lock`; default key stays the test key `40..4F`) flows. A physical regression confirms ordinary applet APDUs remain accessible after GPPro disconnects from SCP03. |
 | Framework APIs | ![Partial](https://img.shields.io/badge/partial-yellow) | `Util`, `OwnerPIN` (try counter durable before comparison, validated flag in RAM), and implemented `JCSystem` transient-memory and transaction operations. See [JavaCard API coverage](#javacard-api-coverage) for detailed results. |
-| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | AES, DES and RSA ciphers, SHA digests, checksums, random number generation, MACs, digital signatures, and elliptic-curve key agreement. See [JavaCard API coverage for `javacard.security`](#javacard-security-coverage). |
+| Native cryptography | ![Partial](https://img.shields.io/badge/partial-yellow) | AES, DES and RSA ciphers, SHA digests, checksums, random number generation, MACs, digital signatures, elliptic-curve key agreement, and the Java Card 3.2 preview ML-KEM and ML-DSA APIs in `max_crypto`. See [JavaCard API coverage for `javacard.security`](#javacard-security-coverage). |
 | Garbage collection | ![Supported](https://img.shields.io/badge/supported-brightgreen) | `JCSystem.requestObjectDeletion()` queues reclamation of unreachable persistent objects after the APDU unwinds. Tested on Pico 2 in the external Windows run. Hardware power-loss validation remains open. |
-| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | CRC-protected flash journal; writes limited to what Java Card atomicity requires (single elements, `Util` block updates, transactions). Power-loss acceptance remains open. |
+| Persistent objects in flash | ![Partial](https://img.shields.io/badge/partial-yellow) | CRC-protected flash journal; writes limited to what Java Card atomicity requires (single elements, `Util` block updates, transactions). Power-loss acceptance remains open. The Java Card 3.2 preview ROM changes can prevent older persisted objects from resolving after a storage-preserving upgrade. |
 | Cross-applet sharing and firewall | ![Partial](https://img.shields.io/badge/partial-yellow) | Targeted cross-AID sharing, proxy lifecycle, and firewall tests exist. Coordinated cross-context garbage-collection roots/cycles have host-unit coverage; full isolation semantics and device RAM bounds remain unestablished. |
 | Optional packages absent from the ROM mask | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Imports such as `javacardx.external` are rejected. |
 | Logical channels | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 | Short APDUs and response chaining | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Standard short command/response path. |
-| Extended-length APDUs | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Up to 1,022 bytes of command or response data for applets implementing `ExtendedLength`. |
+| Extended-length APDUs | ![Supported](https://img.shields.io/badge/supported-brightgreen) | Up to 1,022 bytes of command or response data for applets implementing `ExtendedLength`. Each command fits in one CCID XfrBlock. GlobalPlatform management uses short APDUs. |
 | T=1 waiting-time extension | ![Unsupported](https://img.shields.io/badge/unsupported-red) | Not implemented. |
 
 ### Current crypto coverage
@@ -103,13 +103,14 @@ The compatibility target is **Java Card Classic 3.0.5**. Full specification conf
 | Digital signatures | Elliptic Curve Digital Signature Algorithm (ECDSA) with SHA-1, SHA-224, SHA-256, SHA-384 or SHA-512. RSA PKCS #1 v1.5 and RSA-PSS with the same SHA variants, plus RSA ISO 9796 with SHA-1, including message recovery. |
 | Message authentication codes | HMAC with SHA-1, SHA-256, SHA-384, SHA-512, MD5 or RIPEMD-160. AES CBC-MAC without padding and AES-CMAC. DES-family 4- and 8-byte MACs with no padding, ISO 9797-1 methods 1 and 2 (including algorithm 3), or PKCS #5 padding. |
 | Digests and checksums | SHA-1, SHA-224/256/384/512, SHA3-224/256/384/512, and ISO 3309 CRC16 and CRC32. `InitializedMessageDigest` supports SHA-1 and SHA-2 state import. |
-| Key management | AES-128/192/256 and paired AES keys for XTS, DES, two-key and three-key Triple DES, and HMAC keys. Key storage and on-card key-pair generation for RSA, RSA-CRT and supported prime-field elliptic curves. |
-| Elliptic-curve key agreement | ECDH and cofactor ECDH with hashed or raw output, ECDH with raw X/Y output, and PACE Generic Mapping. |
+| Key management | AES-128/192/256 and paired AES keys for XTS, DES, two-key and three-key Triple DES, and HMAC keys. Key storage and on-card key-pair generation for RSA, RSA-CRT and supported prime-field elliptic curves. `KeyPair(PublicKey, PrivateKey)` reuses matching supplied RSA, RSA-CRT or EC keys. RSA generation retains a preloaded public exponent, and EC generation accepts an alternate generator on the built-in curve and validates preloaded public domain parameters. |
+| Elliptic-curve key agreement | ECDH and cofactor ECDH with hashed or raw output, ECDH with raw X/Y output, and PACE Generic Mapping. Accepts X9.62 uncompressed and parity-checked hybrid public points, plus compressed points on supported curves with field prime p ≡ 3 (mod 4). Compressed P-224 points are unavailable. EC private keys can hold the 161-bit scalar needed for secp160r1. |
+| Post-quantum cryptography (`max_crypto`) | ML-KEM-512/768/1024 encapsulation and decapsulation, and ML-DSA-44/65/87 signing and verification, including pure ML-DSA with streaming messages and the external-μ variants. Hardware vector tests passed on Pico 2. |
 | Random data | Pseudo-random, secure random and preseeded DRBG, plus hardware TRNG on the Pico 2. |
 
 The [build profile configuration](config/javacard-support.json) lists the exact capability selections and key sizes for each image. Key allocation and supported curve operations have distinct limits.
 
-`ALG_XDH` remains unavailable because its Java Card 3.1 named-parameter key API is outside the current ROM ABI. The legacy RSA ISO14888/ISO9796 **Cipher** IDs and the 192-/256-bit-block AES CBC/ECB and MAC NOPAD IDs are excluded. Standard 128-bit-block AES CBC/ECB and MAC support 192- and 256-bit keys.
+`ALG_XDH` remains unavailable because the ROM lacks its named-parameter key types. The legacy RSA ISO14888/ISO9796 **Cipher** IDs and the 192-/256-bit-block AES CBC/ECB and MAC NOPAD IDs are excluded. Standard 128-bit-block AES CBC/ECB and MAC support 192- and 256-bit keys.
 
 ### JavaCard API coverage
 
@@ -134,6 +135,8 @@ The table describes current Java Card 3.0.5 API support. The class lists include
 | `javacardx.framework.util` | `ArrayLogic`, `UtilException` | ![Unsupported](https://img.shields.io/badge/unsupported-red) This package is unavailable. |
 | `javacardx.framework.util.intx` | `JCint` | ![Unsupported](https://img.shields.io/badge/unsupported-red) This package is unavailable. |
 | `javacardx.security` | `SensitiveResult` | ![Supported](https://img.shields.io/badge/supported-brightgreen) Supports `SensitiveResult`. |
+
+The 3.2 preview subset includes `javacardx.crypto.kem` for ML-KEM operations, `javacardx.security.pqc` for key generation and import/export, and `NamedParameterSpec` and `AlgorithmParameterSpec` in `javacard.security` for the six ML parameter sets. ML-DSA uses `Signature`. DHKEM and HashML-DSA are unavailable. [Supported API profile](docs/supported-profile.md#java-card-32-preview-post-quantum-api)
 
 - [Architecture and layering](docs/FIRMWARE_JCVM_ARCHITECTURE.md)
 - [Supported API profile](docs/supported-profile.md)

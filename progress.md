@@ -34365,3 +34365,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 309/413 top-level groups SUCCESS (previous full campaign on `cebfc623` firmware with direct extended APDUs: 290/413). Per suite: signature 23/23, default 7/13, test-vectors 13/49, compression 13/20, miscellaneous 15/48, invalid 15/23, wrong 26/26, twist 14/22, degenerate 18/21, composite 98/98, cofactor 55/55, edge-cases 12/15. Leaf ECDH/ECDSA UXSUCCESS: 0. The remaining UXSUCCESS entries are setters accepting values that keygen, ECDH or ECDSA then refused. Every failed group is an unimplemented curve, except compression (4), P-224: compressed ECDH is unsupported for p = 1 mod 4, and hybrid outcomes are random because ECTester reads the parity byte past the point. That group passed in `20261126-1830-ectester-rerun-9795` and failed here for that reason.
 - Decision: No incorrect or security-relevant behaviour remains in the ECTester campaign besides compressed P-224. Evidence is from the development store, not an empty-card acceptance run.
 - Artifacts/logs: `artifacts/results/ectester-full-05fb3d0b-9795/` (`*.xml`, `*.log`, `suite-summary.tsv`, `status.tsv`, `serial.log`, GPPro logs). CAP SHA-256 `0b4d493607dd9d4ff0234fca344a6d086c606c90670b608fad2906a4afd6d708`.
+
+## 2026-11-26 Refresh README compatibility 2 min
+
+- Step-Id: `20261126-2119-readme-compatibility`
+- Task: Update the README compatibility section.
+- When: '2026-11-26 21:19 CET' - '2026-11-26 21:21 CET'
+- Model: `gpt-6`
+- Change: Documented the Java Card 3.2 preview subset and Compact CAP 2.3 limits, extended APDU transport, existing-key KeyPair generation, X9.62 point encodings, and the ROM upgrade limitation.
+- Validation: Cross-checked the README against SPEC INV-07/09/26, the supported profile, and recorded physical PQC, extended APDU, and ECTester results. Checked the documentation link targets and ran `git diff --check`. No build or hardware retest for this documentation-only step.
+- Result: The README identifies the 3.0.5 acceptance baseline and available preview APIs, including the compressed P-224 limitation.
+- Decision: Use the supported profile for detailed API and loader limits.
+- Artifacts/logs: none.
