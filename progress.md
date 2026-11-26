@@ -34413,3 +34413,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: CPLC source ID `9B03A1E0D653B0D1`. Empty-card UF2 SHA-256 `3851987bb83b2bdf8de8dab208f17aab9623803ce8e1ccdd6b905c8bf68ecbde`. ZIP SHA-256 `799e0c6db9ce8b2b95a78947a86f485b5fb320985bef6de72f643ca493ee9f05`.
 - Decision: Run the five-suite Windows comparison with the same settings as the baseline and track P-224 separately. This exact UF2 was not flashed locally and the Windows runner was not executed here.
 - Artifacts/logs: `build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip`, `artifacts/firmware/pico2-jcvm-maxcrypto-9b03a1e0_20261126-empty-card.uf2`, `artifacts/logs/ectester-external-9b03a1e0-arm.log`.
+
+## 2026-11-26 Add standard JCAlgTest to the Windows ECTester bundle 2 min
+
+- Step-Id: `20261126-2217-bundle-jcalgtest`
+- Task: WIN-ECTESTER-9B03A1E0-20261126
+- When: '2026-11-26 22:17 CET' - '2026-11-26 22:19 CET'
+- Model: `gpt-6`
+- Change: Added the unchanged 1.8.5/jc305 applet, pinned 1.8.5-20261121 host client and manifest-relative libraries to the existing folder and ZIP. Added Windows support and interactive performance instructions.
+- Validation: All 89 fixtures verified. The packaged CAP and client match pinned hashes, archive integrity and all per-file checksums passed, and the UF2 hash is unchanged. No firmware rebuild or Windows run.
+- Result: Updated ZIP SHA-256 `fb4a680577919cfb5837195750252ddeb9d34b25d68d9b99ac1a65bd6690f015`.
+- Decision: Use the updated archive for separate ECTester and standard JCAlgTest runs on the same firmware revision.
+- Artifacts/logs: `build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip`.
