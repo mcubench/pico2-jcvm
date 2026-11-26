@@ -34159,3 +34159,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: the baseline is unchanged; the 3.2 preview subset is now an invariant.
 - Decision: INV-26 is unchanged (whether to name the 1.8.6/jc32 pair there is still open with the user).
 - Artifacts/logs: none
+
+## 2026-11-26 Add the JCAlgTest 1.8.6/jc32 pair to SPEC INV-26 2
+
+- Step-Id: `20261126-1324-spec-inv26-jc32-pair`
+- Task: user directive 2026-11-26 ("add 1.8.6/jc32 pair into INV-26")
+- When: '2026-11-26 13:22' - '2026-11-26 13:24'
+- Model: `claude-opus-5-5`
+- Change: `SPEC.md` INV-26 names the workspace-built 1.8.6/jc32 CAP and 1.8.6 client as reference inputs for the 3.2 preview subset. They run in addition to the 1.8.5/jc305 baseline, never instead of it. Hashes are referenced through `tests/fixtures/manifest.json` (currently CAP `5f19662d…6f8f`, client `a90fe5bb…14fd`), so a re-pin does not edit the spec. The "never modified" rule now also covers pinned builds.
+- Validation: `./tools/fixture-path --verify` passed; text review only, no code/build/hardware change.
+- Result: INV-26 now covers both reference pairs; the 1.8.5/jc305 baseline is unchanged.
+- Decision: none open.
+- Artifacts/logs: none

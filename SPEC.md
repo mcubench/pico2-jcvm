@@ -179,7 +179,18 @@ provenance. Building with `PICO2_ENABLE_OBJECT_DELETION=0` is diagnostic.
 - Use the unchanged user-supplied JCAlgTest 1.8.5/jc305 CAP (user directive
   2026-11-18; SHA-256 `fa64582e…b48fb`) with the 1.8.5 host client,
   identified by its JAR SHA-256. 1.8.4/jc305 CAP results are historical.
-- Supplied CAP and JAR bytes are never modified.
+- For the Java Card 3.2 preview subset (INV-07), also use the JCAlgTest
+  1.8.6/jc32 pair (user directive 2026-11-25): CAP `AlgTest_v1.8.6_jc32.cap`
+  (CAP 2.3, GETVERSION `1.8.6_jc32`) and the 1.8.6 client, both identified by
+  the SHA-256 pinned in `tests/fixtures/manifest.json`. The pair is built in
+  this workspace from the user's AlgTest sources
+  (`tests/fixtures/external/jcalgtest/1.8.6/README.md`), not supplied
+  upstream. It is run in addition to the 1.8.5/jc305 baseline, never instead
+  of it. A rebuild is a new pin, and results record which pin was used.
+- Supplied CAP and JAR bytes, and the bytes of a pinned build, are never
+  modified.
+
+INV-26 was extended by the user on 2026-11-26 with the 1.8.6/jc32 pair.
 
 **INV-27 Acceptance definition.**
 - "Done" means physical-hardware evidence obtained with the unchanged external
