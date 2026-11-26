@@ -34401,3 +34401,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Startup reading fell from about 10,700 to 3,800 words. Six previously missing local performance artifacts remain unavailable. Existing inbox, draft release notes, and submodule state were preserved.
 - Decision: Use TODO for open acceptance, HANDOFF for live state, and search historical evidence by task ID, Step-Id, or commit.
 - Artifacts/logs: `.agent/archive/2026-11-26-task-dispositions.md`
+
+## 2026-11-26 Package current firmware for Windows ECTester 2 min
+
+- Step-Id: `20261126-2212-ectester-external`
+- Task: WIN-ECTESTER-9B03A1E0-20261126
+- When: '2026-11-26 22:11 CET' - '2026-11-26 22:13 CET'
+- Model: `gpt-6`
+- Change: Built and packaged normal ARM max_crypto from `9b03a1e0` for a focused Windows comparison with the tester's `39fd4199` baseline. The firmware includes the `05fb3d0b` EC changes and the bundle reuses the supplied unchanged CAP and Java 8 reader distribution.
+- Validation: ARM build and layout passed with no C/C++ compiler warnings. Existing Java converter and build orchestration warnings were present. Fixture verification passed for 89 files. CAP and reader JAR matched supplied bytes, ZIP integrity passed, and all 4,096 added UF2 blocks were verified erased with original firmware payloads preserved.
+- Result: CPLC source ID `9B03A1E0D653B0D1`. Empty-card UF2 SHA-256 `3851987bb83b2bdf8de8dab208f17aab9623803ce8e1ccdd6b905c8bf68ecbde`. ZIP SHA-256 `799e0c6db9ce8b2b95a78947a86f485b5fb320985bef6de72f643ca493ee9f05`.
+- Decision: Run the five-suite Windows comparison with the same settings as the baseline and track P-224 separately. This exact UF2 was not flashed locally and the Windows runner was not executed here.
+- Artifacts/logs: `build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip`, `artifacts/firmware/pico2-jcvm-maxcrypto-9b03a1e0_20261126-empty-card.uf2`, `artifacts/logs/ectester-external-9b03a1e0-arm.log`.

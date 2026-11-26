@@ -118,7 +118,8 @@ Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 - [ ] Remove the remaining built-in Java method bodies under INV-03 while preserving CAP linkage and installed object layouts. The ARM max_crypto ROM inventory after the native JCSystem transaction step has 449 concrete Java method bodies. Convert API behavior to C++ and verify the linked firmware ROM has no executable Java API bodies.
 
 - [ ] Audit advertised API capabilities against actual behavior and tests. Finish physical KATs for newly enabled crypto and deferred RSA/RSA-CRT 4096 validation. See progress for committed implementations and [external requests](.agent/EXT_REQUESTS.md) for XDH ABI inputs.
-- [ ] Finish external ExtendedLength validation (WIN-ECTESTER-39FD4199-20261126).
+- [ ] Review external ExtendedLength results and finish the follow-up EC
+  comparison (WIN-ECTESTER-9B03A1E0-20261126).
   The implementation landed in `aa65ea94` and `39fd4199`. INV-09 retains the
   T=1 WTX and logical-channel exclusions. PROFILE-02 stays deferred.
 - [ ] Review remaining ECTester cases (309/413 on `05fb3d0b`), including

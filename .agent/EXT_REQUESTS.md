@@ -1,22 +1,27 @@
 # External validation requests
 
-## WIN-ECTESTER-39FD4199-20261126 — ExtendedLength on Pico 2
+## WIN-ECTESTER-9B03A1E0-20261126 — Windows EC regression
 
-Created 2026-11-26 16:27 CET. Use a dedicated test Pico 2. The normal ARM
-max_crypto empty-card image clears applet storage and has CPLC source ID
-`39FD41995AB86A6A`.
+Created 2026-11-26 22:12 CET. The tester confirmed `39fd4199` is the last
+tested firmware. Use it as the comparison baseline. This normal ARM
+max_crypto image has CPLC source ID `9B03A1E0D653B0D1` and includes the
+EC private-value and compressed/hybrid point changes from `05fb3d0b`.
+Flashing clears applet storage. Use a dedicated Pico 2.
 
-- [ECTester Windows ZIP](../build/external-test/pico2-jcvm-ectester-39fd4199_20261126.zip), SHA-256 `ca09f5fae60d2f5cd62386ec9771ce729688a3fffa40e87c4b44fdd76789a356`. Follow the packaged README and return the reports, reader name, chip ID, input hashes and any disconnects, resets or timeouts.
-- [JCAlgTest Windows ZIP](../build/external-test/pico2-jcvm-maxcrypto-39fd4199_20261126.zip), SHA-256 `f5d0b09fac7cdfe98eef3b67d85db635685056ba987c8918d1f028a7652081df`. Use the same firmware for new baseline and PQC regression runs. Keep prior runs tied to their original image.
-- [Standalone UF2](../artifacts/firmware/pico2-jcvm-maxcrypto-39fd4199_20261126-empty-card.uf2), SHA-256 `fa15915809869cbdde7d37645a147edf3b00dd35aeb241dc09ddfc2c49ccf2ea`.
+- [Windows ECTester ZIP](../build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip),
+  SHA-256 `799e0c6db9ce8b2b95a78947a86f485b5fb320985bef6de72f643ca493ee9f05`.
+- [Standalone UF2](../artifacts/firmware/pico2-jcvm-maxcrypto-9b03a1e0_20261126-empty-card.uf2),
+  SHA-256 `3851987bb83b2bdf8de8dab208f17aab9623803ce8e1ccdd6b905c8bf68ecbde`.
 
-The committed ARM build, archive checksums and erased storage were verified
-locally. The exact empty-card UF2 and Windows instructions await external
-validation. The ECTester package documents five suites. In a separate Linux
-run, all 12 suites completed on development token `22A9DEAAA3D09795` with
-user authorization for its negative suites. See progress step
-`20261126-1635-ectester-full-9795`.
+Follow the ZIP README and use the same five suites and settings for the
+comparison. Return the results directory with XML, reader name, chip ID,
+input hashes, and any resets, disconnects, or timeouts. Compare compression
+results case by case, including P-224, which remained open in the Linux run.
+The exact packaged UF2 and Windows workflow await external validation.
 
+This supersedes the ECTester portion of WIN-ECTESTER-39FD4199-20261126.
+The [39fd4199 JCAlgTest ZIP](../build/external-test/pico2-jcvm-maxcrypto-39fd4199_20261126.zip)
+remains available for its separately scoped baseline and PQC regressions.
 
 ## WIN-KEYPAIR-107D7663-20261126 — Pico 2 Windows regression
 
