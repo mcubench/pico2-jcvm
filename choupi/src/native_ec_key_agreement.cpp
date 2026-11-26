@@ -269,8 +269,17 @@ jshort_t javacard_security_KeyAgreement_generateSecret(
   for (jshort_t i = 0; i < publicLength; ++i)
     publicBytes[static_cast<size_t>(i)] = static_cast<uint8_t>(
         publicData->getByteEntry(static_cast<uint16_t>(publicOffset + i)));
-  if (publicLength != static_cast<jshort_t>(1 + 2 * width) || publicBytes[0] != 4)
+  // ANSI X9.62 encodings: 04 uncompressed, 02/03 compressed (Mbed TLS derives
+  // Y when p = 3 mod 4), 06/07 hybrid (Y parity must match the tag).
+  const size_t fullLength = 1U + 2U * width;
+  const uint8_t tag = publicBytes.empty() ? 0 : publicBytes[0];
+  if ((tag == 6 || tag == 7) && publicBytes.size() == fullLength) {
+    if ((publicBytes.back() & 1U) != (tag & 1U)) rc = -1;
+    publicBytes[0] = 4;
+  } else if (!(tag == 4 && publicBytes.size() == fullLength) &&
+             !((tag == 2 || tag == 3) && publicBytes.size() == 1U + width)) {
     rc = -1;
+  }
   if (rc == 0) rc = mbedtls_ecp_point_read_binary(
       &group.value, &peer, publicBytes.data(), publicBytes.size());
   if (rc == 0) rc = mbedtls_ecp_check_pubkey(&group.value, &peer);

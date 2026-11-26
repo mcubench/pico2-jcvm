@@ -472,9 +472,19 @@ std::shared_ptr<JC_Array> combinedArray(JC_Instance &key) {
       key, ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECFIELD,
       JAVA_ARRAY_T_BYTE);
   const uint16_t bits = keyBits(key);
-  if (array->size() != componentOffset(bits, kComponentCount))
+  const uint16_t size = componentOffset(bits, kComponentCount);
+  // Keys stored before S gained the order's extra byte are one byte shorter.
+  if (array->size() != size && array->size() != size - 1U)
     throw Exceptions::ArrayStoreException;
   return array;
+}
+
+// S is the last component, so its capacity is whatever the array leaves.
+uint16_t storedCapacity(const JC_Array &array, uint16_t bits,
+                        uint16_t component) noexcept {
+  if (component == kComponentCount - 1U)
+    return static_cast<uint16_t>(array.size() - componentOffset(bits, component));
+  return componentCapacity(bits, component);
 }
 
 void checkComponent(uint16_t component) {
@@ -487,7 +497,8 @@ uint16_t componentCapacity(uint16_t bits, uint16_t component) noexcept {
   const uint16_t bytes = static_cast<uint16_t>((bits + 7) / 8);
   if (component == 3 || component == 5)
     return static_cast<uint16_t>(1 + 2 * bytes);
-  if (component == 4) return static_cast<uint16_t>(bytes + 1);
+  // R and S can be one byte wider than p (e.g. secp160r1 has a 161-bit order).
+  if (component == 4 || component == 6) return static_cast<uint16_t>(bytes + 1);
   return bytes;
 }
 
@@ -520,7 +531,7 @@ std::vector<uint8_t> read(JC_Instance &key, uint16_t component) {
     array = combinedArray(key);
     const uint16_t bits = keyBits(key);
     end = static_cast<uint16_t>(componentOffset(bits, component) +
-                                componentCapacity(bits, component));
+                                storedCapacity(*array, bits, component));
   } else {
     array = ecComponentArray(key, component);
     end = array->size();
@@ -550,7 +561,7 @@ void write(JC_Instance &key, uint16_t component, const uint8_t *bytes,
   }
   auto array = combinedArray(key);
   const uint16_t bits = keyBits(key);
-  const uint16_t capacity = componentCapacity(bits, component);
+  const uint16_t capacity = storedCapacity(*array, bits, component);
   if (byteLength == 0 || byteLength > capacity)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   // Component and length change in one record write.
