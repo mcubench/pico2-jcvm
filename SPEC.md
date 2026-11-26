@@ -48,10 +48,24 @@ with a card inserted. It is usable through PC/SC on Linux and Windows without
 custom drivers.
 
 **INV-07 Java Card compatibility target.**
-- The target is the Java Card Classic 3.0.5 API, accepting CAP 2.1/2.2 formats
-  where the loader implements their components.
-- This is a compatibility target, not a claim of full specification
-  conformance.
+- The baseline target is the Java Card Classic 3.0.5 API, accepting CAP 2.1/2.2
+  formats where the loader implements their components.
+- In addition, the card implements a declared subset of the Java Card 3.2
+  preview API (currently the post-quantum packages `javacardx.crypto.kem` and
+  `javacardx.security.pqc`, and `javacard.security.NamedParameterSpec` /
+  `AlgorithmParameterSpec`, for ML-KEM and ML-DSA). `docs/supported-profile.md`
+  lists the exact subset.
+- The loader also accepts CAP 2.3 when it can map the CAP onto the implemented
+  components, including newer import versions of the 3.0.5-level ROM packages.
+  Any reference to a 3.1/3.2 class or method the ROM lacks fails closed at
+  installation and is never silently stubbed.
+- The 3.2 preview subset adds to the 3.0.5 baseline and never replaces it. The
+  3.0.5 baseline (JCAlgTest 1.8.5/jc305, INV-26) remains the acceptance
+  reference.
+- This is a compatibility target, not a claim of full conformance to either
+  specification version.
+
+INV-07 was extended by the user on 2026-11-26 to cover the 3.2 preview subset.
 
 **INV-08 Honest support reporting.**
 - The card reports exactly what it implements. Unsupported algorithms return

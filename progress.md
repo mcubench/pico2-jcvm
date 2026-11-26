@@ -34147,3 +34147,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: UF2 `3209b85c69eb02b39467a9add3d2986965e134aadb1dfd9534d281f54a6f253b` (3,193,344 bytes); ZIP `40f4d757ad530de83be691a7e0ab087c81a2e0552c6fa0315d55de50670ac9e8` (18,535,298 bytes).
 - Decision: package `58b5ec0a` is the one to send; `b4adbe13` is superseded.
 - Artifacts/logs: `artifacts/results/windows-pkg-pqcperf-EE116F37C7E4A04E-20261125T222650Z`, `artifacts/results/windows-pkg-pqc-smoke-EE116F37C7E4A04E-20261125T222823Z`, `build/arm-build-58b5ec0a.log`
+
+## 2026-11-26 Extend SPEC INV-07 with the Java Card 3.2 preview subset 5
+
+- Step-Id: `20261126-0628-spec-inv07-jc32-preview`
+- Task: user directive 2026-11-26 (update INV-07 for partial 3.2 support)
+- When: '2026-11-26 06:20' - '2026-11-26 06:28'
+- Model: `claude-opus-5-5`
+- Change: `SPEC.md` INV-07 now states the 3.0.5 baseline plus a declared Java Card 3.2 preview subset (`javacardx.crypto.kem`, `javacardx.security.pqc`, `NamedParameterSpec`/`AlgorithmParameterSpec` for ML-KEM/ML-DSA, detailed in `docs/supported-profile.md`), CAP 2.3 acceptance where mappable, fail-closed for missing 3.1/3.2 references, and 1.8.5/jc305 as the acceptance reference. Wording confirmed by the user ("3.2 preview").
+- Validation: text review only; no code, build or hardware change.
+- Result: the baseline is unchanged; the 3.2 preview subset is now an invariant.
+- Decision: INV-26 is unchanged (whether to name the 1.8.6/jc32 pair there is still open with the user).
+- Artifacts/logs: none
