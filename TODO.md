@@ -62,7 +62,7 @@ several items. (4) Performance work waits for measurements.
    - RV-01 opcode-fetch recovery
    - RV-60 `dup_x`
    - RV-44 rollback-failure recovery
-   - RV-34 flash-identity logging (the flash itself is the check)
+   - RV-34 flash-identity logging completed on EE11 (see progress).
 
 ### P1 — invariant defects (fix offline, then add them to the next batched hardware run)
 
@@ -330,7 +330,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-21 — Synchronize profile/trust statements with current code and limits.** Owner: PROFILE-01 / ARCH-08. Replace blanket multi-applet exclusions with a capability/remaining-gap/evidence matrix; disclose Signature limits and SCP03 subset, state RISC-V as out of scope and separate helper/emulator/hardware evidence. Review R01–R20 remain open until validated. [R21](docs/archive/review_20261106.md#r21--p3-profiletrust-documentation-has-fallen-behind-implemented-behavior)
 
-- [ ] **RV-20261106-34 — Keep explicit flash device identity mandatory through discovery and re-enumeration.** P1; owner: HOST-01 / AC-02. Offline fix is in `tools/lib/flash_usb_target.sh`: absent/duplicate serials fail closed; the selected runtime serial or chip ID is checked after re-enumeration; BOOTSEL transitions require a matching ROM chip ID; the flash log prints the selected path, bus/address, serial and chip ID. Nine synthetic sysfs cases pass, including absent A/sole B, duplicate identities, BOOTSEL ID mismatch, and runtime/BOOTSEL replacement at a stable path. Still open: physical flash verification on an identified Pico with the selected identity logged. [R34](docs/archive/review_20261106.md#r34--p1-an-explicit-flash-serial-can-fall-back-to-a-different-board)
+- [x] **RV-20261106-34 — Keep explicit flash device identity mandatory through discovery and re-enumeration.** Nine synthetic sysfs cases passed. The v0.3-rc1 flash targeted `EE116F37C7E4A04E`, logged the serial and chip ID, completed CDC BOOTSEL recovery and verified flash. The same chip ID's PC/SC reader returned the expected CPLC source ID. See `20261127-0630-ee11-flash-identity`.
 
 - [ ] **RV-20261106-35 — Pin one reader through every power-up acceptance phase.** P2; owner: HOST-01 / PERSIST-03 / AC-02. Forward the exact reader to the existing APDU probe, record actual selected identity and reject ambiguous fallback. Test opposing registry/APDU outcomes across two readers; retain the honest power-cycle-not-verified marker. [R35](docs/archive/review_20261106.md#r35--p2-the-power-up-acceptance-script-can-combine-evidence-from-different-readers)
 

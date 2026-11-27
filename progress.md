@@ -34473,3 +34473,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: RV-02/03/05 have source fixes pending acceptance. RV-47/48/49/51 and the fill half of RV-50 still need source work. Non-atomic copy already passes the persistence flag through.
 - Decision: Continue with the P0 HOST-01 exact-image replay.
 - Artifacts/logs: none
+
+## 2026-11-27 Verify explicit flash identity on EE11
+
+- Step-Id: `20261127-0630-ee11-flash-identity`
+- Task: P0 / RV-20261106-34
+- When: '2026-11-27 06:24' - '2026-11-27 06:30'
+- Model: `gpt-6`
+- Change: Closed the outstanding physical flash identity check during HOST-01 setup.
+- Validation: ARM max_crypto build passed with zero warnings. Fixture verification passed for 89 files and the archived package checksum manifest passed. USB descriptors identified EE116F37C7E4A04E. The chip-ID-pinned flash logged the matching serial and chip ID at USB path 1-1. Runtime direct load returned 249, then CDC BOOTSEL recovery, load, verification and reboot succeeded. PC/SC returned CPLC source ID B4ADBE13D4694DF9 on the selected chip.
+- Result: Exact archived normal max_crypto empty UF2 SHA-256 `9373ebfb15b8427c8b978268e85733f2f6e43de9b217bc1692ca06dee315ae23`. Reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`.
+- Decision: Continue the running HOST-01 command replay. Previous simulator and shortened physical runs did not preserve both the jc32 CAP and complete command prefix. The exact-prefix run stops at APDU 7110, a transport failure or 9000 seconds. APDU 7110 returning 6F00 reproduces the original symptom. Inspect serial for resource pressure, panic, FAULT and flash activity before moving to RAM-pressure verification.
+- Artifacts/logs: `artifacts/results/p0-rc1-ee11/{flash,install,replay,serial}.log`, `build/p0-arm-validation.log`.
