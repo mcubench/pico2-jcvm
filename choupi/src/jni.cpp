@@ -463,6 +463,13 @@ enum class UtilExceptionReason : uint16_t { IllegalValue = 1, TypeMismatched = 2
   throw Exceptions::UtilException;
 }
 
+std::shared_ptr<JC_Array> getArrayLogicOperand(Heap &heap, const jref_t ref) {
+  if (!ref.isNullPointer() && !ref.isArray()) {
+    throwUtilException(UtilExceptionReason::IllegalValue);
+  }
+  return heap.getArray(ref);
+}
+
 int32_t readSignedArrayElement(JC_Array &array, const uint16_t index) {
   switch (array.getType()) {
   case JAVA_ARRAY_T_BYTE:
@@ -484,8 +491,8 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
                         const jshort_t length, const jref_t destinationRef,
                         const jshort_t destinationOffset, const bool atomic) {
   Heap &heap = Context::getActiveContext().getHeap();
-  auto source = heap.getArray(sourceRef);
-  auto destination = heap.getArray(destinationRef);
+  auto source = getArrayLogicOperand(heap, sourceRef);
+  auto destination = getArrayLogicOperand(heap, destinationRef);
   checkArrayRange(*source, sourceOffset, length);
   if (destinationOffset < 0) {
     throw Exceptions::ArrayIndexOutOfBoundsException;
@@ -525,8 +532,8 @@ jshort_t fillArrayRange(const jref_t destinationRef,
                         const jshort_t length, const jref_t patternRef,
                         const jshort_t patternOffset, const bool atomic) {
   Heap &heap = Context::getActiveContext().getHeap();
-  auto destination = heap.getArray(destinationRef);
-  auto pattern = heap.getArray(patternRef);
+  auto destination = getArrayLogicOperand(heap, destinationRef);
+  auto pattern = getArrayLogicOperand(heap, patternRef);
   checkArrayRange(*destination, destinationOffset, length);
   if (patternOffset < 0 ||
       static_cast<uint32_t>(patternOffset) >= pattern->size()) {
@@ -591,8 +598,8 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
     const jref_t secondRef, const jshort_t secondOffset,
     const jshort_t length) {
   Heap &heap = Context::getActiveContext().getHeap();
-  auto first = heap.getArray(firstRef);
-  auto second = heap.getArray(secondRef);
+  auto first = getArrayLogicOperand(heap, firstRef);
+  auto second = getArrayLogicOperand(heap, secondRef);
   checkArrayRange(*first, firstOffset, length);
   checkArrayRange(*second, secondOffset, length);
   if (!isArrayLogicPrimitive(first->getType()) ||
@@ -626,7 +633,7 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
   }
 
   Heap &heap = Context::getActiveContext().getHeap();
-  auto array = heap.getArray(array_ref);
+  auto array = getArrayLogicOperand(heap, array_ref);
   if (offset < 0 || static_cast<uint32_t>(offset) > array->size() ||
       value_offset < 0) {
     throw Exceptions::ArrayIndexOutOfBoundsException;

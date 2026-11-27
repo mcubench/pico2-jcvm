@@ -34641,3 +34641,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Native reason generation and target boot verified. Java catch and superclass behavior and wrong non-array object arguments still need applet-level coverage. No flash traffic was measured. UF2 SHA-256 51c33b7957cb1aefce91598de719910a5409a113cd96871ae20f862032a60e2f; chip EE116F37C7E4A04E.
 - Decision: Keep applet acceptance open.
 - Artifacts/logs: `build/p1-rv51-{host,arm,ee11-cycle}.log`.
+
+## 2026-11-27 Validate ArrayLogic object operands before heap array lookup
+
+- Step-Id: `20261127-0835-arraylogic-object-operands`
+- Task: RV-20261106-51 / INV-07
+- When: '2026-11-27 08:33' - '2026-11-27 08:35'
+- Model: `gpt-6`
+- Change: Routed ArrayLogic Object arguments through a shared check that reports ILLEGAL_VALUE for non-array references. Null and actual array references still use normal heap handling.
+- Validation: ./tools/test-jcarray passed with repack checks for a real instance as source and destination and for a null source. Warning-free max_crypto ARM build and full EE11 JCVM cycle passed. Git diff whitespace passed.
+- Result: Host results distinguish non-array ILLEGAL_VALUE from null. Exact and superclass Java catch behavior remains unverified through an applet. No flash traffic measured. UF2 SHA-256 4e19aa143c30c00e7aac2c258188bf83b52c5e67dec3a5f3aa04ffdc35082071; chip EE116F37C7E4A04E.
+- Decision: Continue applet acceptance.
+- Artifacts/logs: `build/p1-rv51-operand-{host,arm,cycle}.log`.

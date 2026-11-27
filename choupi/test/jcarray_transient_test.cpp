@@ -605,6 +605,33 @@ int main() {
       return 1;
     }
   }
+  for (const auto source : {sessionInstanceReference, bytesRef}) {
+    const auto destination =
+        source == bytesRef ? sessionInstanceReference : bytesRef;
+    try {
+      fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          source, 0, 1, destination, 0);
+      std::cerr << "repack accepted a non-array reference\n";
+      return 1;
+    } catch (jcvm::Exceptions error) {
+      if (error != jcvm::Exceptions::UtilException ||
+          jcvm::Context::getActiveContext().consumePendingUtilExceptionReason() != 1) {
+        std::cerr << "repack raised the wrong reason for a non-array reference\n";
+        return 1;
+      }
+    }
+  }
+  try {
+    fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+        jcvm::jref_t{}, 0, 1, bytesRef, 0);
+    std::cerr << "repack accepted a null reference\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::NullPointerException) {
+      std::cerr << "repack raised the wrong exception for a null reference\n";
+      return 1;
+    }
+  }
   const auto byte_array_end = static_cast<jcvm::jshort_t>(storedBytes->size());
   if (fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
           shortsRef, 0, 0, bytesRef, byte_array_end) != byte_array_end) {
