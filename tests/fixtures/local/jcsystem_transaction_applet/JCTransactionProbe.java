@@ -1623,6 +1623,34 @@ public final class JCTransactionProbe extends Applet {
         }
         break;
       }
+      case 127: {
+        byte[] pattern = JCSystem.makeTransientByteArray((short)2, JCSystem.CLEAR_ON_RESET);
+        pattern[0] = 1;
+        ArrayLogic.arrayFillGeneric(transactionSmallArray, (short)0, (short)2,
+                                    pattern, (short)0);
+        JCSystem.beginTransaction();
+        pattern[0] = 2;
+        ArrayLogic.arrayFillGeneric(transactionSmallArray, (short)0, (short)2,
+                                    pattern, (short)0);
+        short capacity = JCSystem.getUnusedCommitCapacity();
+        pattern[0] = 3;
+        pattern[1] = 4;
+        short filled = ArrayLogic.arrayFillGenericNonAtomic(
+            transactionSmallArray, (short)0, (short)1, pattern, (short)0);
+        short copied = ArrayLogic.arrayCopyRepackNonAtomic(
+            pattern, (short)1, (short)1, transactionSmallArray, (short)1);
+        boolean unchangedCapacity = JCSystem.getUnusedCommitCapacity() == capacity;
+        ArrayLogic.arrayFillGeneric(transactionSmallArray, (short)0, (short)2,
+                                    pattern, (short)1);
+        JCSystem.abortTransaction();
+        boolean survived = ArrayLogic.arrayCompareGeneric(
+            transactionSmallArray, (short)0, pattern, (short)0, (short)2) == 0;
+        short found = ArrayLogic.arrayFindGeneric(
+            transactionSmallArray, (short)0, pattern, (short)1);
+        buffer[0] = (byte)(filled == 1 && copied == 2 && unchangedCapacity &&
+                          survived && found == 1 ? 1 : 0);
+        break;
+      }
       case 126: {
         byte[] bytes = JCSystem.makeTransientByteArray((short)2, JCSystem.CLEAR_ON_RESET);
         short[] words = JCSystem.makeTransientShortArray((short)1, JCSystem.CLEAR_ON_RESET);

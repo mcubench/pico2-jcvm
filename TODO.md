@@ -68,12 +68,12 @@ several items. (4) Performance work waits for measurements.
    These are platform guarantees, not extras:
    - RV-47: references to objects created in an aborted transaction become null.
    - RV-49: standalone atomic primitive range writes enforce commit capacity before replacing the record. Verify power-loss recovery and the applet paths on hardware.
-   - RV-50: NonAtomic fill now uses the rollback-bypassing range writer. Verify through an applet on EE11 and capture flash traffic.
+   - RV-50: EE11 verified non-atomic byte fill and repack across overlapping atomic writes and abort, with 0 sync bytes and 256 journal bytes. Physical short/int, capacity exhaustion and cold restore remain.
    - RV-05 and RV-45: cache ordering and snapshot capacity fixes are in source. Acceptance still needs broader failure and retry coverage.
 
    Measure `sync_bytes` and `journal_bytes` for each change. The EE11 standard transaction
-   regression passed 18 checks with aggregate flash telemetry. ArrayLogic-
-   specific measurements and physical fault injection remain open.
+   regression passed 18 checks with aggregate flash telemetry. The byte ArrayLogic rollback case also has APDU-level telemetry.
+   Other ArrayLogic measurements and physical fault injection remain open.
 8. **Interpreter memory safety (INV-18/22).** RV-03 bounds-before-metadata
    (if the audit says it is still open), RV-02 nested-unwind coverage, RV-30
    exception field kinds, CAPIN-09 `itableswitch` widths and CAPIN-10

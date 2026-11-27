@@ -265,7 +265,9 @@ public final class JCSystemTransactionPhysicalProbe {
       expectByte(channel, 126, 0x01,
           "ArrayLogic exact and superclass catches preserve reasons");
       expectByte(channel, 40, 0x01, "next APDU after ArrayLogic exceptions");
-      System.out.println("TEST:SUMMARY pass=20 fail=0");
+      expectByte(channel, 127, 0x01,
+          "non-atomic ArrayLogic writes survive overlapping atomic rollback");
+      System.out.println("TEST:SUMMARY pass=21 fail=0");
     } finally {
       card.disconnect(false);
     }

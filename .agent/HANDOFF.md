@@ -9,9 +9,9 @@ Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
   returned `AA 9000`; Windows serial and starting state are requested.
 - P0 RAM-pressure ran 208/208 checks. EE11 (`EE116F37C7E4A04E`, reader
   suffix `00 00`) now runs the normal max_crypto ArrayLogic linkage build
-  based on `ac6d794c`. The expanded transaction probe passed 20/20, including
-  both ArrayLogic exception catches, and cleanup passed. See progress
-  `20261127-0840-arraylogic-jc305-linkage`.
+  based on `ac6d794c`. The expanded transaction probe passed 21/21, including
+  ArrayLogic exception catches and persistent byte rollback. Cleanup passed.
+  See progress `20261127-0842-arraylogic-byte-rollback`.
 
 ## Last observed physical state
 

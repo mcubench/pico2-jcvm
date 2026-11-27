@@ -34677,3 +34677,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: RV-51 applet acceptance is complete. The physical case exercised public repack and fill tokens. Physical coverage of every other ArrayLogic entrypoint, persistent range behavior and flash traffic remains open. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Continue persistent ArrayLogic acceptance and the remaining prioritized work.
 - Artifacts/logs: `build/p1-arraylogic-link-{arm,ee11,probe}.log`.
+
+## 2026-11-27 Verify persistent byte ArrayLogic rollback and flash traffic on EE11
+
+- Step-Id: `20261127-0842-arraylogic-byte-rollback`
+- Task: RV-20261106-48/49/50 / INV-07 and INV-14
+- When: '2026-11-27 08:40' - '2026-11-27 08:42'
+- Model: `gpt-6`
+- Change: Added a standard SDK applet probe that checks standalone atomic fill, overlapping transaction writes, both non-atomic entrypoints, remaining capacity, and post-abort compare/find.
+- Validation: Physical suite passed 21/21 with cleanup PASS. APDU 127 returned 019000 and serial showed no fault, panic or test failure. Git diff whitespace passed. No firmware source changes.
+- Result: Both non-atomic byte changes survived abort after prior and later atomic writes on the same record and consumed no additional commit capacity. APDU 127 recorded six overlay writes, 22 logical write bytes, 0 sync bytes and 256 journal bytes. All six public ArrayLogic entrypoints now have at least one physical check. Short/int persistence, capacity exhaustion, cold restore and interruption remain open. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Artifacts/logs: `artifacts/results/p1-ee11-arraylogic/{probe,serial}.log`.
