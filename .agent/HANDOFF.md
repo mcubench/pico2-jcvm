@@ -21,15 +21,18 @@ Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
   (chunked via `ECTester033b`): 309/413, no FAULT, no ECDH/ECDSA UXSUCCESS
   (`artifacts/results/ectester-full-05fb3d0b-9795/`). Open: compressed P-224.
   Check live processes and USB identities before hardware or PC/SC work.
+- 07E7 `07E74C5D7A038DEC` holds package `3be60283` (empty-card image plus
+  pqcperf and JCMathLib runs). It is not ISD-only. Wipe it before acceptance use.
 - EE11 is the working token for the P0 physical checks. 07E7 previously
   exhausted storage during an API probe. F42D retained ~83 KB of applet
   storage. Use the [QKB roster](QKB.md#physical-token-roster) for chip IDs.
 
 ## Next work
 
-- Continue the Windows ECTester comparison against `39fd4199` using the new
-  `9b03a1e0` package, and continue the KeyPair external regression using
-  [EXT_REQUESTS.md](EXT_REQUESTS.md). Track ECTester follow-ups in PROFILE-01.
+- Windows: one request `WIN-CAMPAIGN-3BE60283-20261127` (`run-all.ps1`).
+  When the ZIP returns, run `tools/check-windows-results.py ZIP` and close the
+  items it passes. The ECTester comparison is closed on Linux evidence. Open:
+  the intermittent `6999` (HOST-01, see progress `20261127-1015-…`).
 - Continue P0 physical acceptance. CAPIN-04 frame limit and RV-60 legal
   matrix passed on EE11, and fixture cleanup returned it to ISD-only.
   Remaining subcases are tracked in [TODO.md](../TODO.md).

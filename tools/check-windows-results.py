@@ -44,12 +44,14 @@ def check_run(run: pathlib.Path) -> None:
     mode = ident.get("mode", "?")
     tag = f"{mode}[{run.name}]"
     check(ident.get("client_exit_code") == "0", f"{tag}.client_exit", ident.get("client_exit_code", "missing"))
+    boot = kv(run / "health-before.txt").get("health_boot_count")
     for name in ("health-before", "health-after", "health-after-uninstall"):
         health = kv(run / f"{name}.txt")
         if not health and name == "health-after-uninstall":
             continue
-        check(health.get("health_boot_count") == "1", f"{tag}.{name}.no_reset",
-              f"boot_count={health.get('health_boot_count', 'missing')}")
+        # A reset during the run raises boot_count; the start value is 1 only after a true power-on.
+        check(boot is not None and health.get("health_boot_count") == boot, f"{tag}.{name}.no_reset",
+              f"boot_count={health.get('health_boot_count', 'missing')} start={boot}")
         check(health.get("health_sw_error") == "0", f"{tag}.{name}.no_internal_error_sw",
               f"count={health.get('health_sw_error', 'missing')} last_apdu={health.get('health_last_error_apdu', '-')}"
               f" cla_ins={health.get('health_last_error_cla_ins', '-')} sw={health.get('health_last_error_sw', '-')}")

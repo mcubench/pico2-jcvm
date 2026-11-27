@@ -45,13 +45,13 @@ several items. (4) Performance work waits for measurements.
    Exact empty-card EE11 replay with jc32 completed APDUs 1–7110. The final
    command returned `AA 9000` with no serial fault. See
    `20261127-0751-rsacrt2048-exact-replay` and external request
-   WIN-RSACRT2048-B4ADBE13-20261127 for the Windows serial log and starting state.
+   WIN-RSACRT2048-B4ADBE13-20261127 (starting state from memory; no serial).
 4. **RAM-pressure reclamation on EE11 (physical check complete, INV-15/16).**
    Full symmetric KAT passed 208 checks, cleanup restored the ISD-only state,
    and the serial log had no runtime fault. See `20261127-0754-ee11-ram-pressure-kat`.
-5. **Review returned external results** (WIN-ECTESTER-9B03A1E0,
-   WIN-KEYPAIR-107D7663, WIN-PQC-PERF-58B5EC0A) as soon as they arrive. They
-   are blocked until then, so do not wait on them.
+5. **Review returned external results** (WIN-CAMPAIGN-3BE60283) with
+   `tools/check-windows-results.py` as soon as they arrive. They are blocked
+   until then, so do not wait on them.
 6. **One batched physical acceptance session (INV-18/22/27)** on a single
    identified token with a normal image. Every item here already has an
    offline fix and needs only a replay of an existing fixture:
@@ -234,10 +234,10 @@ several items. (4) Performance work waits for measurements.
 - [ ] Remove the remaining built-in Java method bodies under INV-03 while preserving CAP linkage and installed object layouts. The ARM max_crypto ROM inventory after the native JCSystem transaction step has 449 concrete Java method bodies. Convert API behavior to C++ and verify the linked firmware ROM has no executable Java API bodies.
 
 - [ ] Audit advertised API capabilities against actual behavior and tests. Finish physical KATs for newly enabled crypto and deferred RSA/RSA-CRT 4096 validation. See progress for committed implementations and [external requests](.agent/EXT_REQUESTS.md) for XDH ABI inputs.
-- [ ] Review external ExtendedLength results and finish the follow-up EC
-  comparison (WIN-ECTESTER-9B03A1E0-20261126).
-  The implementation landed in `aa65ea94` and `39fd4199`. INV-09 retains the
-  T=1 WTX and logical-channel exclusions. PROFILE-02 stays deferred.
+- [x] Windows ECTester comparison closed on Linux evidence (user decision
+  2026-11-27: EC results are card-side; transport is covered by the `all`
+  campaign). ExtendedLength landed in `aa65ea94` and `39fd4199`. INV-09 retains
+  the T=1 WTX and logical-channel exclusions. PROFILE-02 stays deferred.
 - [ ] Review remaining ECTester cases (309/413 on `05fb3d0b`), including
   compressed P-224. See `20261126-1843-ectester-full-05fb3d0b`.
 - [ ] Finish ML-DSA physical validation on 07E7/F42D. DHKEM and named-parameter
@@ -276,6 +276,12 @@ several items. (4) Performance work waits for measurements.
   replays did not reproduce it (`35f3459b`). Fuller-store resource exhaustion
   remains a hypothesis. Keep Windows RSA-CRT-4096 confirmation for `d65eb278`
   and the unsupported RSA-4096 KeyPair rows open.
+- [ ] Diagnose the intermittent `6999` on package `15fdcc5d` (07E7, jc32
+  `ALG_SUPPORT_BASIC`). The first `ALG_RSA_CRT` KeyPair `B0E2` took 1,306 ms
+  and returned `6999`, every later APDU also returned `6999`, and there was no
+  reset. It was not reproduced in a fresh run. `6999` means the VM had no selected
+  applet context; a failed SELECT reproduces it. See
+  `20261127-1015-health-6999-pkg-validation`. Health record v2 counts it.
 - [ ] Own remaining CCID stalls and reader loss. Correlate exact-reader PC/SC state, USB visibility, VM return, filesystem sync and CCID submission/completion before assigning a cause.
 
 ### LONGOP-01

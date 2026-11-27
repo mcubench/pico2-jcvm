@@ -34778,3 +34778,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Rebuilt max_crypto PC. VPCD reported 8 passes including ATR, SELECT, and all six ArrayLogic cases. The GP GET DATA unit suite passed 29 checks including the DF7E TLV and value forms. Git diff whitespace passed.
 - Result: Host verification covers Java exceptions and ArrayLogic byte, short and int rollback, atomic capacity rejection and non-atomic capacity bypass. The Pico DF7E code path is unchanged. No new flash or power interruption evidence.
 - Artifacts/logs: `build/p1-arraylogic-vpcd-{build,host,emulator}.log`, `build/p1-df7e-unit.log`.
+
+## 2026-11-27 Windows campaign request from package 3be60283
+
+- Step-Id: `20261127-1030-windows-campaign-request`
+- Task: `HOST-01`, `HOST-02`, `GP-01`, `AC-01`, `PROFILE-01` (external Windows closure)
+- When: '2026-11-27 10:15' - '2026-11-27 13:01'
+- Model: `claude-opus-5-5`
+- Change: Replaced WIN-KEYPAIR-107D7663, WIN-PQC-PERF-58B5EC0A and WIN-ECTESTER-9B03A1E0 with one request, `WIN-CAMPAIGN-3BE60283-20261127` (package ZIP sha256 `9199fa3a…1597`, UF2 `dd745022…01cb`), which is run with `run-all.ps1` and checked with `tools/check-windows-results.py`. The Windows ECTester comparison is closed on the Linux evidence (user decision 2026-11-27). WIN-RSACRT2048 is reduced to questions the tester answers from memory. CRYPTO-XDH is unchanged. TODO gains the intermittent `6999` under HOST-01. The checker's reset rule now compares each health snapshot with `health-before` rather than requiring boot_count 1, because a BOOTSEL reflash without power loss keeps counting.
+- Validation: Package `3be60283` empty-card UF2 flashed on 07E7 `07E74C5D7A038DEC`. `pqcperf` (1.8.6 client, packaged files) exited 0 with 33 measurements and 281 CSV lines. `jcmathlib` PASS. Health before and after each run: same boot count (5 and 6, which accumulate across non-POR reflashes on this host) and 0 internal-error SWs. Serial showed no FAULT. Checker: `fail=0`. A synthetic reset (boot 5 to 6 inside one run) is flagged. On this host the client was started from the repo root, so `already_measured.list` landed there and was moved into the run folder. The Windows template starts the client with `-WorkingDirectory $run`. PowerShell was not executed.
+- Result: The package is ready for the external campaign. No firmware change.
+- Artifacts/logs: `artifacts/results/windows-pkg-3be60283-07E7-20261127T1014Z/{check3.txt,pqcperf_1,jcmathlib_1}`.
