@@ -41,9 +41,10 @@ static uint32_t recoverable_scope_entries = 0;
 static bool inject_recoverable_failure = false;
 #endif
 
-extern "C" void choupi_recoverable_allocation_enter(void) {
+extern "C" void choupi_recoverable_allocation_enter(
+    [[maybe_unused]] bool allow_reclaim_injection) {
 #ifdef CHOUPI_DEBUG_FAIL_RECLAIM_ALLOC
-  if (recoverable_allocation_depth == 0 &&
+  if (allow_reclaim_injection && recoverable_allocation_depth == 0 &&
       (++recoverable_scope_entries % 4u) == 0) {
     inject_recoverable_failure = true;
   }

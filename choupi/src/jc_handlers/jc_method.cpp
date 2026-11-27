@@ -28,12 +28,14 @@
 #include "jc_method.hpp"
 #include "../debug.hpp"
 #include "../heap.hpp"
+#include "../recoverable_allocation.hpp"
 #include "../stack.hpp"
 #include "../../../src/cap_method_bounds.hpp"
 #include "../../../src/cap_method_body_bounds.hpp"
 #include "../../../src/cap_execution_policy.hpp"
 #include <cstddef>
 #include <cstdio>
+#include <new>
 
 namespace jcvm {
 
@@ -380,10 +382,15 @@ void Method_Handler::callMethod(const uint8_t *const method_to_call,
     method_end = methods.data() + body.end;
   }
 
-  // pushing the new frame
-  this->context.getStack().push_Frame(nargs, max_locals, max_stack, new_pc,
-                                      method_begin, method_end,
-                                      arguments_on_caller_stack);
+  // Stack::push_Frame leaves the caller unchanged if insertion fails.
+  try {
+    [[maybe_unused]] RecoverableAllocationScope recoverable_allocation(false);
+    this->context.getStack().push_Frame(nargs, max_locals, max_stack, new_pc,
+                                        method_begin, method_end,
+                                        arguments_on_caller_stack);
+  } catch (const std::bad_alloc &) {
+    throw Exceptions::StackOverflowException;
+  }
 
   //  and updating executed package ID.
 

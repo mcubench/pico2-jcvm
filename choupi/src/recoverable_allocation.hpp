@@ -11,7 +11,7 @@
 #include <cstdint>
 
 #ifndef PC_VERSION
-extern "C" void choupi_recoverable_allocation_enter(void);
+extern "C" void choupi_recoverable_allocation_enter(bool allow_reclaim_injection);
 extern "C" void choupi_recoverable_allocation_exit(void);
 extern "C" uint32_t choupi_recoverable_allocation_failures(void);
 #endif
@@ -21,10 +21,12 @@ namespace jcvm {
 class RecoverableAllocationScope {
 public:
 #ifndef PC_VERSION
-  RecoverableAllocationScope() { choupi_recoverable_allocation_enter(); }
+  explicit RecoverableAllocationScope(bool allow_reclaim_injection = true) {
+    choupi_recoverable_allocation_enter(allow_reclaim_injection);
+  }
   ~RecoverableAllocationScope() { choupi_recoverable_allocation_exit(); }
 #else
-  RecoverableAllocationScope() = default;
+  explicit RecoverableAllocationScope(bool = true) {}
 #endif
   RecoverableAllocationScope(const RecoverableAllocationScope &) = delete;
   RecoverableAllocationScope &

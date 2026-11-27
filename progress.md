@@ -34533,3 +34533,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Restored repeatable host verification. The injected failures run in a test double, so the physical recovery gate stays open. No firmware source or flash behavior changed.
 - Decision: Track the physical recovery gate until equivalent hardware evidence exists.
 - Artifacts/logs: `build/p0-rv44-host.log`.
+
+## 2026-11-27 Recover from frame insertion allocation failure on ARM
+
+- Step-Id: `20261127-0818-arm-frame-allocation-recovery`
+- Task: P0 RV-20261106-43 / INV-18 and INV-22
+- When: '2026-11-27 08:16' - '2026-11-27 08:18'
+- Model: `gpt-6`
+- Change: Opened the existing recoverable allocator scope during method frame insertion and used the VM stack overflow exception if frame allocation fails. Excluded this scope from reclaim-specific fault injection. Package state updates only after successful insertion.
+- Validation: ./tools/test-rmi-registry passed, including injected stack insertion failure preserving caller state. Warning-free normal max_crypto ARM build and full JCVM cycle passed. EE11 serial reported TEST:SUMMARY pass=1 fail=0 without FAULT or PANIC. Git diff whitespace passed.
+- Result: The normal VM booted after the change. The host allocation injection checks frame state preservation. Physical APDU-level allocation injection remains open. UF2 SHA-256 6cf176347f97ddc70fdff023f91c4ed824d378f0fea7b0bdf39a3d5f00034128; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Retain the physical acceptance gate for allocation failure through an APDU.
+- Artifacts/logs: `build/p0-rv43-{arm,host,ee11-cycle}.log`.
