@@ -34545,3 +34545,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The normal VM booted after the change. The host allocation injection checks frame state preservation. Physical APDU-level allocation injection remains open. UF2 SHA-256 6cf176347f97ddc70fdff023f91c4ed824d378f0fea7b0bdf39a3d5f00034128; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Retain the physical acceptance gate for allocation failure through an APDU.
 - Artifacts/logs: `build/p0-rv43-{arm,host,ee11-cycle}.log`.
+
+## 2026-11-27 Route non-atomic ArrayLogic fill through non-atomic storage
+
+- Step-Id: `20261127-0821-arraylogic-nonatomic-fill`
+- Task: RV-20261106-50 / INV-14
+- When: '2026-11-27 08:19' - '2026-11-27 08:21'
+- Model: `gpt-6`
+- Change: Forwarded the requested atomicity from the native fill entrypoints to the existing primitive range writer. Added a host regression covering overlapping atomic writes before and after a non-atomic write, unchanged commit-capacity use, and the durable result after abort.
+- Validation: ./tools/test-jcarray and ./tools/test-persistent-transaction exited 0. The ARM max_crypto build was warning-free. Full JCVM cycle and serial boot checks passed on EE11. An independent APDU regression on the preceding RV-43 image still returned 3F9000, expected 6F00 and 3F9000 at the frame boundary. The optional CPLC query in that run returned 6982 before ISD selection. Fixture cleanup returned the ISD-only inventory. Git diff whitespace passed.
+- Result: Non-atomic fill and repack now use the same rollback-bypassing storage path. A targeted physical ArrayLogic applet check and sync_bytes/journal_bytes measurement remain outstanding. RV-50 validation UF2 SHA-256 f0589549a62b543269f77dae71fafe8f262a1ea4d6cd70db6161a94c4630442b, chip EE116F37C7E4A04E, reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Keep physical RV-50 acceptance and APDU-level RV-43 allocation injection open.
+- Artifacts/logs: `build/p1-rv50-{arm,persistent,jcarray,ee11-cycle}.log`, `artifacts/results/p0-rv43-repeat/`.

@@ -500,7 +500,7 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
 jshort_t fillArrayRange(const jref_t destinationRef,
                         const jshort_t destinationOffset,
                         const jshort_t length, const jref_t patternRef,
-                        const jshort_t patternOffset) {
+                        const jshort_t patternOffset, const bool atomic) {
   Heap &heap = Context::getActiveContext().getHeap();
   auto destination = heap.getArray(destinationRef);
   auto pattern = heap.getArray(patternRef);
@@ -528,7 +528,7 @@ jshort_t fillArrayRange(const jref_t destinationRef,
   }
   destination->copyPrimitiveEntriesFrom(
       static_cast<uint16_t>(destinationOffset),
-      static_cast<uint16_t>(length), repeated.data(), true);
+      static_cast<uint16_t>(length), repeated.data(), atomic);
   return static_cast<jshort_t>(destinationOffset + length);
 }
 } // namespace
@@ -552,7 +552,7 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
     const jshort_t length, const jref_t pattern,
     const jshort_t patternOffset) {
   return fillArrayRange(destination, destinationOffset, length, pattern,
-                        patternOffset);
+                        patternOffset, true);
 }
 
 jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGenericNonAtomic(
@@ -560,7 +560,7 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGenericNonAtomic(
     const jshort_t length, const jref_t pattern,
     const jshort_t patternOffset) {
   return fillArrayRange(destination, destinationOffset, length, pattern,
-                        patternOffset);
+                        patternOffset, false);
 }
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(

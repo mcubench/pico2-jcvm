@@ -4454,6 +4454,38 @@ int main() {
            "commit_and_rollback_sync_failures_preserve_recovery_journal");
   }
 
+  {
+    const uint8_t tag[] = {0xa0, 0x01, 0xfa};
+    const auto byte_type = jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE;
+    const auto type_byte = static_cast<uint8_t>(byte_type);
+    jcvm::fs::Tag fs_tag{};
+    fs_tag.len = sizeof(tag);
+    std::memcpy(fs_tag.value, tag, sizeof(tag));
+    seed(tag, sizeof(tag), {type_byte, 0, 3, 1, 2, 3});
+
+    const uint8_t atomic_value = 8;
+    const uint8_t non_atomic_value = 9;
+    const bool began = FlashMemory_Handler::beginAppletWriteTransaction();
+    FlashMemory_Handler::writePersistentArrayRange(
+        fs_tag, byte_type, 3, 0, 1, 1, &atomic_value, true);
+    const auto capacity = FlashMemory_Handler::unusedCommitCapacity();
+    FlashMemory_Handler::writePersistentArrayRange(
+        fs_tag, byte_type, 3, 0, 2, 1,
+        std::array<uint8_t, 2>{non_atomic_value, non_atomic_value}.data(), false);
+    const bool capacity_unchanged =
+        FlashMemory_Handler::unusedCommitCapacity() == capacity;
+    FlashMemory_Handler::writePersistentArrayRange(
+        fs_tag, byte_type, 3, 1, 2, 1,
+        std::array<uint8_t, 2>{atomic_value, atomic_value}.data(), true);
+    const bool aborted = FlashMemory_Handler::abortAppletWriteTransaction();
+    const std::vector<uint8_t> expected{type_byte, 0, 3, 9, 9, 3};
+    expect(began && capacity_unchanged && aborted &&
+               read(tag, sizeof(tag)) == expected &&
+               persistent_transaction_test::read_durable(tag, sizeof(tag)) ==
+                   expected,
+           "non_atomic_array_range_survives_overlapping_atomic_write_and_abort");
+  }
+
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

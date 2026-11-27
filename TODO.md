@@ -68,7 +68,7 @@ several items. (4) Performance work waits for measurements.
    These are platform guarantees, not extras:
    - RV-47: references to objects created in an aborted transaction become null.
    - RV-49: atomic `Util.arrayCopy`/`arrayFill` have their own transaction boundary.
-   - RV-50: NonAtomic writes stay outside rollback.
+   - RV-50: NonAtomic fill now uses the rollback-bypassing range writer. Verify through an applet on EE11 and capture flash traffic.
    - RV-05 and RV-45: caches and capacity stay unchanged when a write fails.
 
    Measure `sync_bytes` and `journal_bytes` for each change.
