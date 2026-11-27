@@ -34569,3 +34569,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Host evidence covers a new record with no prior snapshot. Existing-record failure and retry/commit coverage remain open. Physical failure injection and sync_bytes/journal_bytes were not measured during the boot-only check. Image SHA-256 e3b73d3b22c8872b482f199429ad4ce0ceae483a1211bc4495fbe55e1713a17e, chip EE116F37C7E4A04E, reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Preserve the pending transaction acceptance cases in TODO.
 - Artifacts/logs: `build/p1-rv45-{host,arm,ee11-cycle}.log`.
+
+## 2026-11-27 Verify existing-record snapshot failure and commit retry
+
+- Step-Id: `20261127-0824-existing-snapshot-growth-regression`
+- Task: RV-20261106-45 / INV-14
+- When: '2026-11-27 08:23' - '2026-11-27 08:24'
+- Model: `gpt-6`
+- Change: Injected snapshot-vector growth failure after an earlier write and after copying an existing target record. Asserted unchanged capacity, preservation of the earlier tentative write and existing target value, and durable publication of both writes on retry and commit.
+- Validation: The full persistent transaction host suite passed with TEST:SUMMARY fail=0. Git diff whitespace passed.
+- Result: Host coverage now includes both a new record with retry/abort and an existing record with a prior snapshot and retry/commit. This test-only step did not flash firmware or measure physical flash traffic.
+- Decision: Leave the physical allocation-failure gate open.
+- Artifacts/logs: `build/p1-rv45-existing-host.log`.

@@ -182,6 +182,47 @@ int main() {
   }
 
   {
+    using jcvm::FlashMemory_Handler;
+    using persistent_transaction_test::read;
+    using persistent_transaction_test::read_durable;
+    const auto prior_tag = make_tag(0xcd);
+    const auto existing_tag = make_tag(0xce);
+    const std::vector<uint8_t> original{0x11, 0x22};
+    const std::vector<uint8_t> replacement{0x33, 0x44};
+    persistent_transaction_test::seed(existing_tag.value, existing_tag.len,
+                                      original);
+
+    const bool began = FlashMemory_Handler::beginAppletWriteTransaction();
+    const bool prior_written = FlashMemory_Handler::writePersistentRecord(
+        prior_tag, replacement.data(), replacement.size());
+    const auto capacity = FlashMemory_Handler::unusedCommitCapacity();
+    // The first entry occupies the retained slot. Allow the existing record's
+    // payload copy to allocate, then fail growth of the snapshot vector.
+    persistent_transaction_test::allocation_failure_injected = false;
+    persistent_transaction_test::allocations_before_failure = 1;
+    const bool write_failed = !FlashMemory_Handler::writePersistentRecord(
+        existing_tag, replacement.data(), replacement.size());
+    persistent_transaction_test::allocations_before_failure = -1;
+    const bool preserved =
+        FlashMemory_Handler::unusedCommitCapacity() == capacity &&
+        read(existing_tag.value, existing_tag.len) == original &&
+        read(prior_tag.value, prior_tag.len) == replacement &&
+        read_durable(prior_tag.value, prior_tag.len).empty();
+    const bool retried = FlashMemory_Handler::writePersistentRecord(
+        existing_tag, replacement.data(), replacement.size());
+    const auto retry_capacity = FlashMemory_Handler::unusedCommitCapacity();
+    const bool committed = FlashMemory_Handler::commitPersistentWriteTransaction();
+    expect(began && prior_written &&
+               persistent_transaction_test::allocation_failure_injected &&
+               write_failed && preserved && retried &&
+               retry_capacity == capacity - existing_tag.len - 3 - original.size() &&
+               committed &&
+               read_durable(existing_tag.value, existing_tag.len) == replacement &&
+               read_durable(prior_tag.value, prior_tag.len) == replacement,
+           "snapshot_growth_failure_preserves_prior_write_and_commit_capacity");
+  }
+
+  {
     constexpr uint8_t aid[] = {0xA0, 0x00, 0x00, 0x00, 0x62};
     jcvm::Context first_context(0x71, 0x31);
     std::vector<jcvm::jref_t> initial_roots;
