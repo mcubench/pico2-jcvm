@@ -34497,3 +34497,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: APDU 7110 returned AA 9000 in 953 ms. The serial record for that command had 1770 files, 73311 bytes in use, 0 sync bytes and 1792 journal bytes. Exact UF2 SHA-256 9373ebfb15b8427c8b978268e85733f2f6e43de9b217bc1692ca06dee315ae23. Reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Non-reproduction on Linux. Request the Windows serial log and starting state while continuing independent P0 work.
 - Artifacts/logs: `artifacts/results/p0-rc1-ee11/{flash,install,replay,serial}.log`.
+
+## 2026-11-27 Pass the full symmetric KAT and cleanup on EE11
+
+- Step-Id: `20261127-0754-ee11-ram-pressure-kat`
+- Task: P0 RAM-pressure reclamation (INV-15/16)
+- When: '2026-11-27 07:51' - '2026-11-27 07:54'
+- Model: `gpt-6`
+- Change: Flashed an empty-card normal max_crypto image from fdbaa813. Used the stock physical symmetric probe without a label filter to revisit the previous AES-XTS cutoff and GP DELETE panic.
+- Validation: GP inventories before and after showed only the ISD. The PC/SC runner exited 0 with pass=208 fail=0, transient_cipher_lifecycle=pass and cleanup PASS. Serial contained no FAULT, PANIC, NO_RESOURCE or out-of-memory record.
+- Result: 208 recorded FS_APDU entries reported 0 total sync bytes and 5888 total journal bytes (largest individual entry 768). Normal telemetry confirms the physical workload and cleanup passed. It does not identify individual RAM-collection triggers. UF2 SHA-256 7247cafab31eda8df242dc07d6eddbfeb60a7b110d2ffb52fcc091445af5aafd. Chip EE116F37C7E4A04E, PC/SC reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Close the scoped physical cutoff and cleanup check. Continue prioritized physical acceptance while the external results are pending.
+- Artifacts/logs: `artifacts/results/p0-rc1-ee11/ram-pressure-{flash,pre,post,kat,serial}.log`.

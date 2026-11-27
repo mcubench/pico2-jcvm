@@ -46,10 +46,9 @@ several items. (4) Performance work waits for measurements.
    command returned `AA 9000` with no serial fault. See
    `20261127-0751-rsacrt2048-exact-replay` and external request
    WIN-RSACRT2048-B4ADBE13-20261127 for the Windows serial log and starting state.
-4. **RAM-pressure reclamation on EE11 (INV-15/16).** Use an empty normal
-   max_crypto image with the full symmetric KAT, GP cleanup and flash
-   telemetry. See `20261121-2154-ram-pressure-reclaim`. Release stability
-   depends on this.
+4. **RAM-pressure reclamation on EE11 (physical check complete, INV-15/16).**
+   Full symmetric KAT passed 208 checks, cleanup restored the ISD-only state,
+   and the serial log had no runtime fault. See `20261127-0754-ee11-ram-pressure-kat`.
 5. **Review returned external results** (WIN-ECTESTER-9B03A1E0,
    WIN-KEYPAIR-107D7663, WIN-PQC-PERF-58B5EC0A) as soon as they arrive. They
    are blocked until then, so do not wait on them.
