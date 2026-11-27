@@ -84,7 +84,11 @@ several items. (4) Performance work waits for measurements.
    CAPIN-08 waits for the RV-16 measurement.
 10. **API contract bugs (INV-07/08).** Each is small and self-contained, so
     they suit short sessions:
-    - RV-51 native UtilException dispatch implemented. Applet catch verification remains.
+    - RV-51 native UtilException dispatch is implemented. Standard JC305
+      applets hit an ArrayLogic package-linkage gap before the catch checks.
+      Verify the public AID/version and translate the differing static method
+      tokens while preserving resident CAP compatibility. See
+      `20261127-0838-arraylogic-public-linkage`.
     - RV-48 `arrayCopyRepack` width conversions implemented. Applet acceptance remains.
     - RV-39 CBC MAC IV reset
     - RV-37 EC cofactor

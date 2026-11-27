@@ -34653,3 +34653,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Host results distinguish non-array ILLEGAL_VALUE from null. Exact and superclass Java catch behavior remains unverified through an applet. No flash traffic measured. UF2 SHA-256 4e19aa143c30c00e7aac2c258188bf83b52c5e67dec3a5f3aa04ffdc35082071; chip EE116F37C7E4A04E.
 - Decision: Continue applet acceptance.
 - Artifacts/logs: `build/p1-rv51-operand-{host,arm,cycle}.log`.
+
+## 2026-11-27 Identify the public ArrayLogic import and token mismatch
+
+- Step-Id: `20261127-0838-arraylogic-public-linkage`
+- Task: RV-20261106-48/51 / INV-07
+- When: '2026-11-27 08:35' - '2026-11-27 08:38'
+- Model: `gpt-6`
+- Change: Built a test-only applet case for exact and superclass catches and a valid repack. Preserved its patch offline so the existing transaction suite remains usable.
+- Validation: Oracle JC305 converted the applet successfully. On EE11, LOAD proceeded to INSTALL, which returned 6A88. The runner reported cleanup PASS. Compared the probe Import.cap with standard and resident export dumps. Restored and rebuilt the ordinary transaction fixture. Git diff whitespace passed.
+- Result: Standard CAP imports framework/util AID A000000062020801 v1.1. The ROM exports it at A00000006202020801 v1.0. Standard tokens for fill, non-atomic fill, compare and find are 5/2/3/4, while resident tokens are 2/3/4/5. Repack and exception class tokens matched. AID alias alone would dispatch the wrong methods. Applet catches remain unverified. Image SHA-256 4e19aa143c30c00e7aac2c258188bf83b52c5e67dec3a5f3aa04ffdc35082071; chip EE116F37C7E4A04E, reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Implement public import identity and static token translation together, then rerun the applet.
+- Artifacts/logs: `build/p1-rv51-exp/`, `build/p1-rv51-applet-ee11.log`.
