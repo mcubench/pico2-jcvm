@@ -34665,3 +34665,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Standard CAP imports framework/util AID A000000062020801 v1.1. The ROM exports it at A00000006202020801 v1.0. Standard tokens for fill, non-atomic fill, compare and find are 5/2/3/4, while resident tokens are 2/3/4/5. Repack and exception class tokens matched. AID alias alone would dispatch the wrong methods. Applet catches remain unverified. Image SHA-256 4e19aa143c30c00e7aac2c258188bf83b52c5e67dec3a5f3aa04ffdc35082071; chip EE116F37C7E4A04E, reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Implement public import identity and static token translation together, then rerun the applet.
 - Artifacts/logs: `build/p1-rv51-exp/`, `build/p1-rv51-applet-ee11.log`.
+
+## 2026-11-27 Link standard JC305 ArrayLogic and verify applet catches
+
+- Step-Id: `20261127-0840-arraylogic-jc305-linkage`
+- Task: RV-20261106-48/51 / INV-07
+- When: '2026-11-27 08:38' - '2026-11-27 08:40'
+- Model: `gpt-6`
+- Change: Recognized the public framework/util 1.1 AID against the resident 1.0 ROM package and remapped the six public static ArrayLogic method tokens. The resident AID retains its original method order. Added ordinary SDK-converted exact and superclass catch checks to the transaction probe.
+- Validation: Warning-free max_crypto ARM build and full JCVM cycle passed on EE11. The transaction fixture installed and all 20 checks passed. APDU 126 verified both reasons and a valid repack, followed by APDU 40 returning 019000. GlobalPlatform cleanup passed. Git diff whitespace passed.
+- Result: RV-51 applet acceptance is complete. The physical case exercised public repack and fill tokens. Physical coverage of every other ArrayLogic entrypoint, persistent range behavior and flash traffic remains open. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Continue persistent ArrayLogic acceptance and the remaining prioritized work.
+- Artifacts/logs: `build/p1-arraylogic-link-{arm,ee11,probe}.log`.

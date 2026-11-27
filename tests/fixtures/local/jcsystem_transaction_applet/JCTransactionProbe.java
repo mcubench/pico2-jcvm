@@ -4,6 +4,7 @@ import javacard.framework.APDU;
 import javacard.framework.APDUException;
 import javacard.framework.AID;
 import javacard.framework.Applet;
+import javacard.framework.CardRuntimeException;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
@@ -25,6 +26,8 @@ import javacard.security.KeyBuilder;
 import javacard.security.RandomData;
 import javacard.security.Signature;
 import javacardx.crypto.Cipher;
+import javacardx.framework.util.ArrayLogic;
+import javacardx.framework.util.UtilException;
 
 public final class JCTransactionProbe extends Applet {
   private static Object staticReferenceRoot;
@@ -1618,6 +1621,33 @@ public final class JCTransactionProbe extends Applet {
           length += digest.doFinal(streamingInput, (short) 1, (short) 5120,
                                    buffer, length);
         }
+        break;
+      }
+      case 126: {
+        byte[] bytes = JCSystem.makeTransientByteArray((short)2, JCSystem.CLEAR_ON_RESET);
+        short[] words = JCSystem.makeTransientShortArray((short)1, JCSystem.CLEAR_ON_RESET);
+        try {
+          ArrayLogic.arrayCopyRepack(this, (short)0, (short)1, words, (short)0);
+          ISOException.throwIt(ISO7816.SW_UNKNOWN);
+        } catch (UtilException expected) {
+          if (expected.getReason() != UtilException.ILLEGAL_VALUE) {
+            ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+          }
+        }
+        try {
+          ArrayLogic.arrayFillGeneric(words, (short)0, (short)1, bytes, (short)0);
+          ISOException.throwIt(ISO7816.SW_UNKNOWN);
+        } catch (CardRuntimeException expected) {
+          if (!(expected instanceof UtilException) ||
+              expected.getReason() != UtilException.TYPE_MISMATCHED) {
+            ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+          }
+        }
+        bytes[0] = (byte)0x12;
+        bytes[1] = (byte)0x34;
+        short end = ArrayLogic.arrayCopyRepack(bytes, (short)0, (short)2,
+                                              words, (short)0);
+        buffer[0] = (byte)(end == 1 && words[0] == (short)0x1234 ? 1 : 0);
         break;
       }
       case 125: {

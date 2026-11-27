@@ -113,6 +113,8 @@ constexpr PublicApiAid kPublicApiAids[] = {
     {6, {0xa0, 0x00, 0x00, 0x01, 0x51, 0x00}}, // org/globalplatform
     {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x01, 0x01}}, // crypto/kem (3.2)
     {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x05, 0x05}}, // security/pqc (3.2)
+    {8, {0xa0, 0, 0, 0, 0x62, 2, 8, 1}}, // public framework/util
+    {9, {0xa0, 0, 0, 0, 0x62, 2, 2, 8, 1}}, // resident framework/util
     // CHOUPI resident AID aliases for the public apdu/util and security APIs.
     {10, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x02, 0x08, 0x09, 0x01}},
     {8, {0xa0, 0x00, 0x00, 0x00, 0x62, 0x02, 0x02, 0x05}},
@@ -139,6 +141,18 @@ constexpr NewerApiImport kNewerApiImports[] = {
 
 bool accepts_newer_api_import(const jc_cap_package_info &imported,
                               const jc_cap_package_info &resident) {
+  // The public JC305 ArrayLogic 1.1 export uses a different AID and
+  // method order from the resident 1.0 implementation.
+  constexpr uint8_t public_util[] = {0xa0, 0, 0, 0, 0x62, 2, 8, 1};
+  constexpr uint8_t resident_util[] = {0xa0, 0, 0, 0, 0x62, 2, 2, 8, 1};
+  if (imported.major_version == 1 && imported.minor_version == 1 &&
+      resident.major_version == 1 && resident.minor_version == 0 &&
+      imported.AID_length == sizeof(public_util) &&
+      resident.AID_length == sizeof(resident_util) &&
+      std::memcmp(imported.AID, public_util, sizeof(public_util)) == 0 &&
+      std::memcmp(resident.AID, resident_util, sizeof(resident_util)) == 0) {
+    return true;
+  }
   if (imported.AID_length != resident.AID_length ||
       std::memcmp(imported.AID, resident.AID, imported.AID_length) != 0)
     return false;

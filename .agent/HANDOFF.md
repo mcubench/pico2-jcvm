@@ -7,13 +7,11 @@ Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
 
 - P0 HOST-01 exact v0.3-rc1 jc32 replay completed 7,110 APDUs. APDU 7110
   returned `AA 9000`; Windows serial and starting state are requested.
-- P0 RAM-pressure run passed 208/208 checks and returned EE11 to an ISD-only
-  state. EE11 (`EE116F37C7E4A04E`, reader suffix `00 00`) runs the normal
-  max_crypto RV-51 validation image built from the worktree based on
-  `2f334d4a`. An earlier image passed the standard transaction probe
-  18/18 with cleanup
-  (`artifacts/results/p1-ee11-transaction/`). The preceding KAT logs are in
-  `artifacts/results/p0-rc1-ee11/`. Check live processes before PC/SC work.
+- P0 RAM-pressure ran 208/208 checks. EE11 (`EE116F37C7E4A04E`, reader
+  suffix `00 00`) now runs the normal max_crypto ArrayLogic linkage build
+  based on `ac6d794c`. The expanded transaction probe passed 20/20, including
+  both ArrayLogic exception catches, and cleanup passed. See progress
+  `20261127-0840-arraylogic-jc305-linkage`.
 
 ## Last observed physical state
 

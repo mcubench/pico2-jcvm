@@ -172,6 +172,7 @@ uint8_t remap_imported_static_method_token(
   static constexpr uint8_t crypto_cipher_methods[] = {0, 1, 1};
   static constexpr uint8_t sensitive_result_methods[] = {
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  static constexpr uint8_t array_logic_methods[] = {0, 1, 3, 4, 5, 2};
   static constexpr uint8_t apdu_util_methods[] = {1, 2, 3, 4, 5};
 
   const uint8_t *mapping = nullptr;
@@ -241,6 +242,15 @@ uint8_t remap_imported_static_method_token(
     // APDUUtil has the same constructor-induced token offset.
     mapping = apdu_util_methods;
     mapping_size = sizeof(apdu_util_methods);
+  }
+
+  // Translate only the public JC305 export, preserving resident CAP tokens.
+  if (package_info.AID_length == 8 && package_info.major_version == 1 &&
+      package_info.minor_version == 1 && class_token == 0 &&
+      std::memcmp(package_info.AID, "\xA0\x00\x00\x00\x62\x02\x08\x01", 8) == 0) {
+    return method_token < sizeof(array_logic_methods)
+        ? array_logic_methods[method_token]
+        : 0xff;
   }
 
   if (mapping == nullptr || method_token >= mapping_size) {

@@ -262,7 +262,10 @@ public final class JCSystemTransactionPhysicalProbe {
           "global array reference is rejected from static fields");
       expectByte(channel, 40, 0x01,
           "global array reference is rejected from array components");
-      System.out.println("TEST:SUMMARY pass=18 fail=0");
+      expectByte(channel, 126, 0x01,
+          "ArrayLogic exact and superclass catches preserve reasons");
+      expectByte(channel, 40, 0x01, "next APDU after ArrayLogic exceptions");
+      System.out.println("TEST:SUMMARY pass=20 fail=0");
     } finally {
       card.disconnect(false);
     }
