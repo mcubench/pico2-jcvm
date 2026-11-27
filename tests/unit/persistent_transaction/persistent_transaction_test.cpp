@@ -4551,6 +4551,37 @@ int main() {
            "non_atomic_array_range_survives_overlapping_atomic_write_and_abort");
   }
 
+  {
+    const auto tag = make_tag(0xcf);
+    const auto type = jcvm::FieldType::FIELD_TYPE_ARRAY_BYTE;
+    const uint8_t replacement = 9;
+    const uint16_t max_length =
+        FlashMemory_Handler::maxCommitCapacity() - tag.len - 6;
+    for (const uint16_t length : {max_length, uint16_t(max_length + 1)}) {
+      std::vector<uint8_t> original(3u + length, 1);
+      original[0] = static_cast<uint8_t>(type);
+      original[1] = static_cast<uint8_t>(length >> 8);
+      original[2] = static_cast<uint8_t>(length);
+      seed(tag.value, tag.len, original);
+      bool rejected = false;
+      try {
+        FlashMemory_Handler::writePersistentArrayRange(
+            tag, type, length, 0, 1, 1, &replacement, true);
+      } catch (const jcvm::Exceptions exception) {
+        rejected = exception == jcvm::Exceptions::TransactionException;
+      }
+      const auto updated = read(tag.value, tag.len);
+      if (length == max_length) {
+        original[3] = replacement;
+        expect(!rejected && updated == original,
+               "standalone_atomic_array_range_accepts_exact_commit_capacity");
+      } else {
+        expect(rejected && updated == original,
+               "standalone_atomic_array_range_rejects_over_capacity_before_write");
+      }
+    }
+  }
+
   std::printf("TEST:SUMMARY fail=%d\n", failures);
   return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

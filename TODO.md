@@ -67,7 +67,7 @@ several items. (4) Performance work waits for measurements.
 7. **Persistence semantics from the AGENTS.md 2026-11-19 directive (INV-14).**
    These are platform guarantees, not extras:
    - RV-47: references to objects created in an aborted transaction become null.
-   - RV-49: atomic `Util.arrayCopy`/`arrayFill` have their own transaction boundary.
+   - RV-49: standalone atomic primitive range writes enforce commit capacity before replacing the record. Verify power-loss recovery and the applet paths on hardware.
    - RV-50: NonAtomic fill now uses the rollback-bypassing range writer. Verify through an applet on EE11 and capture flash traffic.
    - RV-05 and RV-45: cache ordering and snapshot capacity fixes are in source. Acceptance still needs broader failure and retry coverage.
 

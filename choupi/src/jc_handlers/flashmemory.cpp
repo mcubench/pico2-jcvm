@@ -2648,12 +2648,20 @@ void FlashMemory_Handler::writePersistentArrayRange(
     throw Exceptions::SecurityException;
   }
 
-  std::vector<uint8_t> updated(stored, stored + record_length);
   const uint32_t byte_offset = 3u +
       static_cast<uint32_t>(offset) * element_width;
   const uint32_t byte_length = static_cast<uint32_t>(count) * element_width;
-  std::memcpy(updated.data() + byte_offset, source, byte_length);
   if (atomic) {
+    // A standalone update replaces one record. Apply the same capacity
+    // limit as a fresh snapshot without journaling a second copy.
+    if (!persistentWriteTransactionActive() &&
+        record_length + tag.len + kCommitEntryMetadataOverhead >
+            maxCommitCapacity()) {
+      choupi_record_transaction_buffer_full();
+      throw Exceptions::TransactionException;
+    }
+    std::vector<uint8_t> updated(stored, stored + record_length);
+    std::memcpy(updated.data() + byte_offset, source, byte_length);
     write_persistent_tag_or_throw(tag, updated.data(), record_length);
   } else {
     const uint8_t status = fs_write_range(

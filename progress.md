@@ -34581,3 +34581,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Host coverage now includes both a new record with retry/abort and an existing record with a prior snapshot and retry/commit. This test-only step did not flash firmware or measure physical flash traffic.
 - Decision: Leave the physical allocation-failure gate open.
 - Artifacts/logs: `build/p1-rv45-existing-host.log`.
+
+## 2026-11-27 Enforce standalone atomic array-range commit capacity
+
+- Step-Id: `20261127-0826-standalone-atomic-range-capacity`
+- Task: RV-20261106-49 / INV-14
+- When: '2026-11-27 08:24' - '2026-11-27 08:26'
+- Model: `gpt-6`
+- Change: Applied the existing snapshot budget to standalone atomic persistent primitive range replacement. The operation publishes one record. Within a caller transaction the existing snapshot path still applies. Non-atomic writes avoid constructing an unused whole-record copy.
+- Validation: Host regression accepted a record at the exact capacity boundary and rejected a record one byte larger without changing it. The persistent transaction suite passed. Warning-free max_crypto ARM build and full JCVM cycle passed on EE11. Initial flash attempt lost the sysfs serial during re-enumeration. The chip-ID-pinned retry verified BOOTSEL and succeeded. No runtime FAULT or PANIC. Git diff whitespace passed.
+- Result: Standalone capacity check verified on host. Applet-level capacity, physical interruption and sync_bytes/journal_bytes remain unmeasured. UF2 SHA-256 2bc743f3be8365573b7e1da39d11a7623ed28d8366cdff3296a5b827d80b5677; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Keep the physical acceptance gate.
+- Artifacts/logs: `build/p1-rv49-{host,arm,ee11-cycle,ee11-retry}.log`.
