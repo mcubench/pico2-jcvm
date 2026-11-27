@@ -34461,3 +34461,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The live external request list covers remaining dependencies. The referenced converter inbox directory was absent locally.
 - Decision: Continue the P0 source status audit.
 - Artifacts/logs: none
+
+## 2026-11-27 Audit prioritized review items against current source
+
+- Step-Id: `20261127-0620-p0-review-audit`
+- Task: P0 review status audit
+- When: '2026-11-27 06:19' - '2026-11-27 06:20'
+- Model: `gpt-6`
+- Change: Recorded current source status for RV-02/03/05/47/48/49/50/51 in TODO.
+- Validation: Inspected the stack unwind and local bounds paths, persistent instance setters, native abort, ArrayLogic entrypoints, persistent range writer and exception dispatch. Git diff whitespace passed. No runtime tests for this documentation audit.
+- Result: RV-02/03/05 have source fixes pending acceptance. RV-47/48/49/51 and the fill half of RV-50 still need source work. Non-atomic copy already passes the persistence flag through.
+- Decision: Continue with the P0 HOST-01 exact-image replay.
+- Artifacts/logs: none

@@ -27,11 +27,20 @@ several items. (4) Performance work waits for measurements.
 1. **Housekeeping (complete).** Removed the v0.2-rc1 external request after
    v0.2 publication. The reported Oracle converter issue is off-card. The
    JCMathLib F103 fix is recorded in `20261126-1440-jcmathlib-ec-keypair`.
-2. **Status audit of P1 review items (offline).** Several RV entries below are
-   older than later source fixes. For example, RV-03 and RV-05 were partly
-   corrected (see progress.md around the R01–R08 reconciliation record). Before
-   coding, mark each of RV-02/03/05/47/48/49/50/51 in this file as *fixed, needs
-   acceptance* or *still defective*, so that nobody redoes a fix.
+2. **Status audit of P1 review items (complete, source inspection).**
+   - RV-02, RV-03 and RV-05: **fixed, needs acceptance**. Frame unwinding
+     removes the front frame, local accesses validate their full width before
+     metadata access, and persistent field caches publish after storage succeeds.
+   - RV-47: **still defective**. Applet abort restores records without
+     invalidating transaction-created heap references.
+   - RV-48: **still defective**. Repack requires identical element types.
+   - RV-49: **still defective**. Copy/fill publish one persistent record,
+     but the standalone calls have no commit-capacity preflight.
+   - RV-50: **still defective for fill**. Non-atomic repack passes the flag
+     to the range writer and updates existing rollback snapshots. Non-atomic
+     fill still selects the atomic path.
+   - RV-51: **still defective**. The remote exception table recognizes
+     UtilException, while local dispatch and native reason handling are missing.
 3. **HOST-01 Windows RSA-CRT-2048 `6F00` on `b4adbe13`.** This is the only open
    functional failure from the v0.3-rc1 external run. Do option (a) from the
    2026-11-26 non-reproduction record: an empty-card image with the
@@ -301,7 +310,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-02 — Correct nested frame unwinding direction.** Owner: CTX-01 / HARD-01. Preserve caller PCs/locals/roots when trimming nonzero-depth stacks; cover Java/ISO errors, allocation failure and timeout through multiple nested callbacks. Historical `pop_back()` versus `emplace_front()` defect; current source now uses front removal. [R02](docs/archive/review_20261106.md#r02--p1-nested-failure-cleanup-removes-callers-instead-of-callees)
 
-- [ ] **RV-20261106-03 — Check local/stack bounds before metadata and pointer access.** Owner: HARD-01. Check complete two-word ranges before mutation; sanitize high local indices at nonzero frame bases and stack-capacity boundaries. Source-confirmed ordering defect; sanitizer reproducer pending. [R03](docs/archive/review_20261106.md#r03--p1-local-metadata-is-indexed-before-the-local-variable-bounds-check)
+- [ ] **RV-20261106-03 — Check local/stack bounds before metadata and pointer access.** Owner: HARD-01. Check complete two-word ranges before mutation; sanitize high local indices at nonzero frame bases and stack-capacity boundaries. Source ordering fixed in `b36e9cf1`; full boundary acceptance remains. [R03](docs/archive/review_20261106.md#r03--p1-local-metadata-is-indexed-before-the-local-variable-bounds-check)
 
 - [ ] **RV-20261106-05 — Keep persistent field caches unchanged when a write fails.** Owner: PERSIST-03. Fault-inject capacity/allocation/serialization/backend errors for scalar/int/reference stores; catch and read immediately, commit, abort, collect and restore. Prove cache/storage agreement and preserved old roots, including failure before snapshot insertion. [R05](docs/archive/review_20261106.md#r05--p1-failed-persistent-setters-publish-cache-changes-before-storage-succeeds)
 
