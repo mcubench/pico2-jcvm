@@ -34557,3 +34557,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Non-atomic fill and repack now use the same rollback-bypassing storage path. A targeted physical ArrayLogic applet check and sync_bytes/journal_bytes measurement remain outstanding. RV-50 validation UF2 SHA-256 f0589549a62b543269f77dae71fafe8f262a1ea4d6cd70db6161a94c4630442b, chip EE116F37C7E4A04E, reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Keep physical RV-50 acceptance and APDU-level RV-43 allocation injection open.
 - Artifacts/logs: `build/p1-rv50-{arm,persistent,jcarray,ee11-cycle}.log`, `artifacts/results/p0-rv43-repeat/`.
+
+## 2026-11-27 Preserve commit capacity when snapshot insertion fails
+
+- Step-Id: `20261127-0823-exception-safe-snapshot-charge`
+- Task: RV-20261106-45 / INV-14
+- When: '2026-11-27 08:21' - '2026-11-27 08:23'
+- Model: `gpt-6`
+- Change: Account for a persistent snapshot only after it enters the snapshot vector. Remove the tentative entry if commit-capacity enforcement rejects it.
+- Validation: The new host regression injected the first snapshot-vector allocation failure, checked intact capacity and untouched storage, then retried the same tag, observed one charge and confirmed abort removed the tentative record. The complete persistent transaction unit suite exited 0 with TEST:SUMMARY fail=0. Warning-free max_crypto ARM build and EE11 full JCVM cycle passed. Serial showed runtime PASS without FAULT or PANIC. Git diff whitespace passed.
+- Result: Host evidence covers a new record with no prior snapshot. Existing-record failure and retry/commit coverage remain open. Physical failure injection and sync_bytes/journal_bytes were not measured during the boot-only check. Image SHA-256 e3b73d3b22c8872b482f199429ad4ce0ceae483a1211bc4495fbe55e1713a17e, chip EE116F37C7E4A04E, reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Preserve the pending transaction acceptance cases in TODO.
+- Artifacts/logs: `build/p1-rv45-{host,arm,ee11-cycle}.log`.

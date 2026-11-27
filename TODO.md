@@ -69,7 +69,7 @@ several items. (4) Performance work waits for measurements.
    - RV-47: references to objects created in an aborted transaction become null.
    - RV-49: atomic `Util.arrayCopy`/`arrayFill` have their own transaction boundary.
    - RV-50: NonAtomic fill now uses the rollback-bypassing range writer. Verify through an applet on EE11 and capture flash traffic.
-   - RV-05 and RV-45: caches and capacity stay unchanged when a write fails.
+   - RV-05 and RV-45: cache ordering and snapshot capacity fixes are in source. Acceptance still needs broader failure and retry coverage.
 
    Measure `sync_bytes` and `journal_bytes` for each change.
 8. **Interpreter memory safety (INV-18/22).** RV-03 bounds-before-metadata
@@ -350,7 +350,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-44 — Preserve recovery state when rollback itself fails.** P1; owner: PERSIST-03 / STORE-01 / HARD-01. Software fix is implemented: rollback retains its journal and active guard after erase/write/sync failure, blocks persistent reads/writes and new commits, and retries recovery before applet APDUs (returns `6581` while recovery still fails). Regression injections cover restore erase/write failure, rollback sync failure, commit plus rollback sync failure, no partial durable publication, successful retry, and simulated cold reset restoring the prior committed state. Remaining acceptance: validate recovery on hardware. [R44](docs/archive/review_20261106.md#r44--p1-failed-rollback-discards-the-recovery-journal-and-reopens-ordinary-writes)
 
-- [ ] **RV-20261106-45 — Make snapshot publication and capacity charging exception-safe.** P2; owner: PERSIST-02/03 / HARD-01. Inject vector growth failure after record read/charge, verify unchanged journal/capacity, then retry the same tag and commit/abort. Cover old/new records and prior successful snapshots; distinguish this from instance-cache rollback. [R45](docs/archive/review_20261106.md#r45--p2-snapshot-insertion-failure-leaves-commit-capacity-charged-without-a-snapshot)
+- [ ] **RV-20261106-45 — Make snapshot publication and capacity charging exception-safe.** P2; owner: PERSIST-02/03 / HARD-01. The source publishes the charge only after vector insertion. Host injection verified unchanged capacity and storage, followed by retry and abort, for a new record. Verify commit and failure after prior successful snapshots. Cover old/new records and prior successful snapshots; distinguish this from instance-cache rollback. [R45](docs/archive/review_20261106.md#r45--p2-snapshot-insertion-failure-leaves-commit-capacity-charged-without-a-snapshot)
 
 - [ ] **RV-20261106-46 — Avoid owning-array reconstruction for each persistent element check.** P2; owner: API-01 / PERSIST-01 / HARD-01. Preserve header/type/size/provenance validation with bounded metadata access. Measure increasing primitive/reference scans, allocator calls, temporary bytes and latency; reference validation currently initializes an entire owner vector per element. Cover low-memory reads and malformed records with secure checks enabled. [R46](docs/archive/review_20261106.md#r46--p2-persistent-array-element-validation-allocates-a-temporary-array-on-every-access)
 

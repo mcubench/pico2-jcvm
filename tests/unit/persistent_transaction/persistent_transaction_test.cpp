@@ -158,6 +158,30 @@ bool enumerate_root_vector(jcvm::Heap::ReferenceVisitor visitor,
 
 int main() {
   {
+    const auto tag = make_tag(0xcc);
+    const uint8_t value = 0x42;
+    const bool began = jcvm::FlashMemory_Handler::beginAppletWriteTransaction();
+    const auto capacity = jcvm::FlashMemory_Handler::unusedCommitCapacity();
+    persistent_transaction_test::allocation_failure_injected = false;
+    persistent_transaction_test::allocations_before_failure = 0;
+    const bool write_failed = !jcvm::FlashMemory_Handler::writePersistentRecord(
+        tag, &value, sizeof(value));
+    persistent_transaction_test::allocations_before_failure = -1;
+    const bool preserved =
+        jcvm::FlashMemory_Handler::unusedCommitCapacity() == capacity &&
+        persistent_transaction_test::read(tag.value, tag.len).empty();
+    const bool retried = jcvm::FlashMemory_Handler::writePersistentRecord(
+        tag, &value, sizeof(value));
+    const auto retry_capacity = jcvm::FlashMemory_Handler::unusedCommitCapacity();
+    const bool aborted = jcvm::FlashMemory_Handler::abortAppletWriteTransaction();
+    expect(began && persistent_transaction_test::allocation_failure_injected &&
+               write_failed && preserved && retried &&
+               retry_capacity == capacity - tag.len - 3 && aborted &&
+               persistent_transaction_test::read(tag.value, tag.len).empty(),
+           "snapshot_allocation_failure_preserves_commit_capacity");
+  }
+
+  {
     constexpr uint8_t aid[] = {0xA0, 0x00, 0x00, 0x00, 0x62};
     jcvm::Context first_context(0x71, 0x31);
     std::vector<jcvm::jref_t> initial_roots;

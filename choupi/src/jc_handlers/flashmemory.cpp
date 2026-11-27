@@ -168,8 +168,14 @@ void snapshot_persistent_tag(const fs::Tag &tag) {
       throw Exceptions::IOException;
     }
   }
-  charge_persistent_snapshot(snapshot);
+  // Publish the charge only after the vector owns the snapshot.
   persistent_write_snapshots.push_back(std::move(snapshot));
+  try {
+    charge_persistent_snapshot(persistent_write_snapshots.back());
+  } catch (...) {
+    persistent_write_snapshots.pop_back();
+    throw;
+  }
 }
 
 void preserve_non_atomic_array_byte_in_snapshot(const fs::Tag &tag,
