@@ -35,7 +35,7 @@ CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" 2>&1 | tee "${build_log}"
 
 "${repo_root}/tools/env" python3 \
   "${repo_root}/tests/integration/jcsystem_transaction_applet_test.py" \
-  --case 6 --timeout "${timeout_seconds}" --memory "${memory_image}" \
+  --case 6 --case 130 --timeout "${timeout_seconds}" --memory "${memory_image}" \
   --log "${install_emulator_log}" 2>&1 | tee "${install_log}"
 
 package_id="$(python3 - "${install_emulator_log}" <<'PY'
@@ -53,14 +53,14 @@ echo "VPCD:PERSISTENCE_PACKAGE_ID package=${package_id}"
 
 PICO2_HEAP_GC=1 "${repo_root}/tools/env" python3 \
   "${repo_root}/tests/integration/jcsystem_transaction_applet_test.py" \
-  --case 14 --case 15 --case 16 --case 17 --case 58 --case 80 --case 81 --case 82 \
+  --case 14 --case 15 --case 16 --case 17 --case 58 --case 80 --case 81 --case 82 --case 131 \
   --gc-pressure-rounds "${gc_pressure_rounds}" \
   --package-id "${package_id}" \
   --restore-existing --timeout "${timeout_seconds}" \
   --memory "${memory_image}" --log "${restore_emulator_log}" 2>&1 | \
   tee "${restore_log}"
 
-expected_passes=$(( 10 + gc_pressure_rounds * 7 ))
+expected_passes=$(( 11 + gc_pressure_rounds * 7 ))
 grep -Fq "TEST:SUMMARY pass=${expected_passes} fail=0" "${restore_log}" || \
   die "restored applet field/reference assertions did not all pass"
 printf 'PERSISTENCE:PASS emulator_process_restart gc_rounds=%s install_log=%s restore_log=%s\n' \

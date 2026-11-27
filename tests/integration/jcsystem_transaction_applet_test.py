@@ -53,7 +53,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=(*range(1, 131), 132),
+        "--case", type=int, action="append", choices=range(1, 133),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -337,6 +337,8 @@ def main() -> int:
                     (130, b"\x01", "non-atomic ArrayLogic updates an oversized record"),
                     (132, b"\x01", "non-atomic int ArrayLogic writes survive abort"),
                 )
+                if args.case and 131 in args.case:
+                    cases += ((131, b"\xff\xff", "read back oversized ArrayLogic writes"),)
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
                     if args.case

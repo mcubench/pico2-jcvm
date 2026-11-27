@@ -34789,3 +34789,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Package `3be60283` empty-card UF2 flashed on 07E7 `07E74C5D7A038DEC`. `pqcperf` (1.8.6 client, packaged files) exited 0 with 33 measurements and 281 CSV lines. `jcmathlib` PASS. Health before and after each run: same boot count (5 and 6, which accumulate across non-POR reflashes on this host) and 0 internal-error SWs. Serial showed no FAULT. Checker: `fail=0`. A synthetic reset (boot 5 to 6 inside one run) is flagged. On this host the client was started from the repo root, so `already_measured.list` landed there and was moved into the run folder. The Windows template starts the client with `-WorkingDirectory $run`. PowerShell was not executed.
 - Result: The package is ready for the external campaign. No firmware change.
 - Artifacts/logs: `artifacts/results/windows-pkg-3be60283-07E7-20261127T1014Z/{check3.txt,pqcperf_1,jcmathlib_1}`.
+
+## 2026-11-27 Recheck oversized ArrayLogic writes across a fresh emulator process
+
+- Step-Id: `20261127-2213-arraylogic-vpcd-restore`
+- Task: RV-20261106-50 / INV-13 and INV-14
+- When: '2026-11-27 22:12' - '2026-11-27 22:13'
+- Model: `gpt-6`
+- Change: Extended the VPCD persistence suite to modify the oversized byte array in its install process and verify both bytes from the saved image in its restore process.
+- Validation: PICO2_VPCD_PERSISTENCE_GC_ROUNDS=0 ./tools/test-vpcd-persistence passed. The update returned 019000, restore returned FFFF9000, and the restore phase passed 11 checks. Git diff whitespace passed.
+- Result: Repeatable host process-restart coverage supplements the EE11 firmware reboot evidence. Physical USB power removal and interruption remain open. This test-only step measured no physical flash traffic.
+- Artifacts/logs: `build/p1-arraylogic-vpcd-restart.log`.
