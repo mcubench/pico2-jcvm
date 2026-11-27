@@ -7,7 +7,7 @@
 #               switch for this choice, so the block answers the two menu prompts
 #               itself after it sees each one in the client log.
 # 'pqc'       = ALG_SUPPORT_BASIC with the JCAlgTest 1.8.6/jc32 CAP and client
-#               (JC 3.2 ML-KEM/ML-DSA rows; minutes). Installs applet-jc32.cap
+#               (JC 3.2 ML-KEM/ML-DSA rows; 30+ minutes, on-card RSA generation dominates). Installs applet-jc32.cap
 #               instead of the unchanged 1.8.5/jc305 applet.cap.
 # 'pqcperf'   = menu 2 -> PERFORMANCE TEST -> 4 Only post-quantum algorithms, with
 #               the 1.8.6/jc32 CAP and client (ML-KEM/ML-DSA keygen, encaps/decaps,

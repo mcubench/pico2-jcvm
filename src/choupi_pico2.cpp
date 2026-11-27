@@ -129,22 +129,24 @@ uint8_t *put32(uint8_t *out, uint32_t value) {
 
 } // namespace
 
-extern "C" void choupi_ccid_health_counters(uint32_t *apdus, uint32_t *sw6f00,
-                                            uint32_t *last_6f00_index,
-                                            uint16_t *last_6f00_command);
+extern "C" void choupi_ccid_health_counters(uint32_t *apdus, uint32_t *sw_error,
+                                            uint32_t *last_error_index,
+                                            uint16_t *last_error_command,
+                                            uint16_t *last_error_sw);
 
 // Layout (version 1) is documented in docs/supported-profile.md.
 extern "C" size_t choupi_health_record(uint8_t *out, size_t capacity) {
-  constexpr size_t kValueLength = 36;
+  constexpr size_t kValueLength = 38;
   if (out == nullptr || capacity < kValueLength + 3) return 0;
-  uint32_t apdus = 0, sw6f00 = 0, last_index = 0;
-  uint16_t last_command = 0;
-  choupi_ccid_health_counters(&apdus, &sw6f00, &last_index, &last_command);
+  uint32_t apdus = 0, sw_error = 0, last_index = 0;
+  uint16_t last_command = 0, last_sw = 0;
+  choupi_ccid_health_counters(&apdus, &sw_error, &last_index, &last_command,
+                              &last_sw);
   uint8_t *p = out;
   *p++ = 0xdf;
   *p++ = 0x7e;
   *p++ = static_cast<uint8_t>(kValueLength);
-  *p++ = 0x01; // record version
+  *p++ = 0x02; // record version
   *p++ = health_boot_flags;
   p = put32(p, health_boot_count);
   p = put32(p, health_chip_reset);
@@ -152,10 +154,12 @@ extern "C" size_t choupi_health_record(uint8_t *out, size_t capacity) {
   p = put32(p, health_recovery_info);
   p = put32(p, to_ms_since_boot(get_absolute_time()));
   p = put32(p, apdus);
-  p = put32(p, sw6f00);
+  p = put32(p, sw_error);
   p = put32(p, last_index);
   *p++ = static_cast<uint8_t>(last_command >> 8);
   *p++ = static_cast<uint8_t>(last_command);
+  *p++ = static_cast<uint8_t>(last_sw >> 8);
+  *p++ = static_cast<uint8_t>(last_sw);
   return static_cast<size_t>(p - out);
 }
 

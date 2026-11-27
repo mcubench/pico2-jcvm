@@ -34755,3 +34755,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Resets and `6F00` responses during an external run are now visible with no serial log. Flash traffic is unchanged: the record is RAM/POWMAN only.
 - Decision: Package from this commit and replace all open Windows requests with one campaign request.
 - Artifacts/logs: `artifacts/logs/cycle-choupi-20261127T075452Z.log`.
+
+## 2026-11-27 Health record counts 6999 after package validation finding 40
+
+- Step-Id: `20261127-1015-health-6999-pkg-validation`
+- Task: `HOST-01` (external Windows closure)
+- When: '2026-11-27 09:15' - '2026-11-27 10:15'
+- Model: `claude-opus-5-5`
+- Change: Package `15fdcc5d` validation found an intermittent `6999` that the v1 health record missed, because v1 counted only `6F00`. Record v2 (38-byte value) counts internal-error SWs `6F00` and `6999` and adds the last error SW. Decoder, checker and docs follow. The `pqc` duration in the package README is corrected from "minutes" to 30+ minutes, and the loader is compiled for Java 11 (it uses `Path.of`; GPPro needs 11 anyway). Token switch: EE11 is in active use by another session (ArrayLogic checks), so validation used 07E7 `07E74C5D7A038DEC`, which was wiped for this purpose.
+- Validation: Package `15fdcc5d` empty-card UF2 (`9e126204…638e`) flashed on 07E7. Packaged GPPro, jc32 CAP and precompiled loader were used. JCMathLib descriptor load PASS and BnShiftRight returned the expected `684886E0…4EED 9000`. Health after: boot 1, 2,249 APDUs, 0 `6F00`. Run 1 `ALG_SUPPORT_BASIC` (1.8.6 client): APDU ~418, the first `B0E2` of the `ALG_RSA_CRT` KeyPair section, took 1,306 ms and returned `6999`, and every later APDU returned `6999` (8,516 rows). There was no card reset (boot 1) and no FAULT, but the 300 s serial window ended just before the failure. Reproduction run 3 (fresh empty card, 1,800 s serial) completed 2,444 APDUs past that point with no `6999` and no FAULT before the 1,700 s client timeout (`ALG_RSA` 3072 keygen 234 s, `ALG_RSA_CRT` 3072 365 s). A failed SELECT (`6A82`) followed by an applet-routed `B0E2` deterministically returns `6999`, so `6999` means the VM had no selected applet context. v2 build `./tools/cycle choupi --serial 07E7…` CYCLE:PASS (`artifacts/logs/cycle-choupi-20261127T091213Z.log`). The record then read `…00000006 00000001 00000004 B0E2 6999`: count 1, APDU 4, B0E2, 6999, which matches the Python mirror of `health.ps1`'s offsets. `./tools/test-gp-get-data` 29/29, ARM build has no warnings.
+- Result: The intermittent run-1 `6999` was not reproduced. The likely mechanism is lost applet selection (a reset or failed reselect) while CCID kept routing to the applet. It is unattributed and does not involve the health-record diff, which touches only counters and GET DATA.
+- Decision: Track it under HOST-01. The Windows campaign records `6999` frequency through the health record. Repackage from this commit.
+- Artifacts/logs: `artifacts/results/windows-pkg-15fdcc5d-07E7-20261127T0812Z/`, `artifacts/results/windows-pkg-15fdcc5d-07E7-repro3-20261127T0856Z/`.

@@ -34,12 +34,12 @@ AES-128 ENC/MAC/DEK keyset (KVN 1-7F) that persists across power cycles and is
 reported by GET DATA `00E0`; an empty-card wipe restores the default key.
 Proprietary GET DATA `DF7E` (ISD selected, no secure channel) returns a
 health record for runs without a serial capture. It never writes flash.
-Value, version 1, big-endian: version (1), flags (1: bit0 watchdog-caused
+Value, version 2, big-endian: version (1), flags (1: bit0 watchdog-caused
 reboot, bit1 VM instruction trace retained from the previous boot), boot
 count since power-on (4, POWMAN scratch), POWMAN `CHIP_RESET` (4), retained
 trace PC (4) and info (4), uptime ms (4), APDU responses since boot (4),
-`6F00` responses since boot (4), index of the last `6F00` (4) and its
-CLA/INS (2). `tools/windows-health.ps1` decodes it.
+internal-error responses (`6F00`, `6999`) since boot (4), index of the last
+one (4), its CLA/INS (2) and its SW (2). `tools/windows-health.ps1` decodes it.
 This project is for educational use.
 
 Cryptographic capabilities are selected by `config/javacard-support.json`.

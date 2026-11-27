@@ -50,9 +50,9 @@ def check_run(run: pathlib.Path) -> None:
             continue
         check(health.get("health_boot_count") == "1", f"{tag}.{name}.no_reset",
               f"boot_count={health.get('health_boot_count', 'missing')}")
-        check(health.get("health_sw6f00") == "0", f"{tag}.{name}.no_6f00",
-              f"sw6f00={health.get('health_sw6f00', 'missing')} last={health.get('health_last_6f00_apdu', '-')}"
-              f"/{health.get('health_last_6f00_cla_ins', '-')}")
+        check(health.get("health_sw_error") == "0", f"{tag}.{name}.no_internal_error_sw",
+              f"count={health.get('health_sw_error', 'missing')} last_apdu={health.get('health_last_error_apdu', '-')}"
+              f" cla_ins={health.get('health_last_error_cla_ins', '-')} sw={health.get('health_last_error_sw', '-')}")
     serial = run / "serial.log"
     if serial.is_file():
         faults = [l for l in serial.read_text(errors="replace").splitlines() if "FAULT" in l]

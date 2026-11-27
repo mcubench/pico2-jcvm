@@ -480,9 +480,10 @@ void service_pending_final_response() {
 
 // Per-power-session APDU counters for the DF7E health record (RAM only).
 uint32_t health_apdus = 0;
-uint32_t health_sw6f00 = 0;
-uint32_t health_last_6f00_index = 0;
-uint16_t health_last_6f00_command = 0;
+uint32_t health_sw_error = 0;
+uint32_t health_last_error_index = 0;
+uint16_t health_last_error_command = 0;
+uint16_t health_last_error_sw = 0;
 
 void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
                    size_t payload_length, uint8_t status = 0,
@@ -490,13 +491,17 @@ void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
   const uint8_t sequence = rx_buffer[6];
   if (type == 0x80 && rx_buffer[0] == 0x6f) {
     ++health_apdus;
-    if (payload != nullptr && payload_length >= 2 &&
-        payload[payload_length - 2] == 0x6f &&
-        payload[payload_length - 1] == 0x00) {
-      ++health_sw6f00;
-      health_last_6f00_index = health_apdus;
-      health_last_6f00_command = static_cast<uint16_t>(
+    const uint16_t sw = payload != nullptr && payload_length >= 2
+        ? static_cast<uint16_t>((payload[payload_length - 2] << 8) |
+                                payload[payload_length - 1])
+        : 0;
+    // 6F00: internal error; 6999: VM lost the selected applet context.
+    if (sw == 0x6f00 || sw == 0x6999) {
+      ++health_sw_error;
+      health_last_error_index = health_apdus;
+      health_last_error_command = static_cast<uint16_t>(
           (static_cast<uint16_t>(rx_buffer[10]) << 8) | rx_buffer[11]);
+      health_last_error_sw = sw;
     }
   }
   if (payload_length + 10 > sizeof(tx_buffer)) {
@@ -1496,13 +1501,15 @@ const usbd_class_driver_t kApplicationDrivers[] = {
 };
 } // namespace
 
-extern "C" void choupi_ccid_health_counters(uint32_t *apdus, uint32_t *sw6f00,
-                                            uint32_t *last_6f00_index,
-                                            uint16_t *last_6f00_command) {
+extern "C" void choupi_ccid_health_counters(uint32_t *apdus, uint32_t *sw_error,
+                                            uint32_t *last_error_index,
+                                            uint16_t *last_error_command,
+                                            uint16_t *last_error_sw) {
   *apdus = health_apdus;
-  *sw6f00 = health_sw6f00;
-  *last_6f00_index = health_last_6f00_index;
-  *last_6f00_command = health_last_6f00_command;
+  *sw_error = health_sw_error;
+  *last_error_index = health_last_error_index;
+  *last_error_command = health_last_error_command;
+  *last_error_sw = health_last_error_sw;
 }
 
 extern "C" void choupi_ccid_task(void) {
