@@ -34449,3 +34449,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The next agent picks from P0: housekeeping, the RV status audit, the HOST-01 RSA-CRT-2048 6F00 repro, EE11 RAM-pressure reclaim, external result review and one batched physical acceptance session.
 - Decision: The RV status audit (P0 item 2) must come before P1 coding, because several RV entries predate source fixes.
 - Artifacts/logs: none.
+
+## 2026-11-27 Retire the v0.2 release-candidate request 1 minute
+
+- Step-Id: `20261127-0618-retire-v02-request`
+- Task: P0 housekeeping
+- When: '2026-11-27 06:18' - '2026-11-27 06:19'
+- Model: `gpt-6`
+- Change: Removed the obsolete v0.2 RC external request and updated TODO and handoff. Kept the reported off-card Oracle converter issue as a note and referenced the completed JCMathLib fix.
+- Validation: Checked the local v0.2 tag, active request headings and Git diff whitespace. Documentation only.
+- Result: The live external request list covers remaining dependencies. The referenced converter inbox directory was absent locally.
+- Decision: Continue the P0 source status audit.
+- Artifacts/logs: none

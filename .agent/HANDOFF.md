@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-11-26. See [TODO.md](../TODO.md) for active work and
+Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
 [EXT_REQUESTS.md](EXT_REQUESTS.md) for external dependencies.
 
 ## Last observed physical state
@@ -26,5 +26,4 @@ Updated 2026-11-26. See [TODO.md](../TODO.md) for active work and
   with the full symmetric KAT, GP cleanup, serial output and flash telemetry.
   If the cutoff recurs, use `PICO2_DEBUG_HEAP_GC=1` for allocation and collection
   samples. RSA/RSA-CRT 4096 physical runs remain deferred at user request.
-- Await the Windows RC result under WIN-MAXCRYPTO-RC-V0.2-RC1. The tag is local.
-  Publish only with user authorization.
+- v0.2 is published per the prioritized TODO. Current release work targets v0.3.

@@ -24,11 +24,9 @@ several items. (4) Performance work waits for measurements.
 
 ### P0 — v0.3-rc blockers and cheap closures
 
-1. **Housekeeping (short).** Remove the obsolete WIN-MAXCRYPTO-RC-V0.2-RC1
-   request from `EXT_REQUESTS.md`, since v0.2 is published. `inbox/converter_bug`
-   is an off-card Oracle converter defect, not a VM task, so record it only as a
-   note. The `inbox/problem_jcmathlib` F103 is already fixed
-   (`20261126-1440-jcmathlib-ec-keypair`).
+1. **Housekeeping (complete).** Removed the v0.2-rc1 external request after
+   v0.2 publication. The reported Oracle converter issue is off-card. The
+   JCMathLib F103 fix is recorded in `20261126-1440-jcmathlib-ec-keypair`.
 2. **Status audit of P1 review items (offline).** Several RV entries below are
    older than later source fixes. For example, RV-03 and RV-05 were partly
    corrected (see progress.md around the R01–R08 reconciliation record). Before
