@@ -34437,3 +34437,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Updated ZIP SHA-256 `ad33453b26ad10ae99d461a569a1309aa3e8f42c0166b2582d251e732efaaec7`.
 - Decision: Use separate empty-card runs for the two paired JCAlgTest variants.
 - Artifacts/logs: `build/external-test/pico2-jcvm-ectester-9b03a1e0_20261126.zip`.
+
+## 2026-11-27 Prioritize the TODO backlog for v0.3-rc (duration not measured)
+
+- Step-Id: `20261127-0614-todo-prioritization`
+- Task: backlog triage (TODO.md)
+- When: '2026-11-27' - '2026-11-27 06:14 CET'
+- Model: `claude-opus-5-5`
+- Change: Replaced the stale "Next work" list in TODO.md with a ranked "Priorities (assessed 2026-11-27)" section (P0–P3 plus blocked) aimed at v0.3-rc. v0.2 is published, so the v0.2-rc1 review item was dropped. Ranking: invariant defects before acceptance-only work, release blockers first, hardware checks batched per flash, performance only after measurement.
+- Validation: Documentation only. Checked against SPEC.md invariants, HANDOFF, EXT_REQUESTS, tags (v0.2 local tag; v0.3-rc1 = b4adbe13) and the latest progress records for RV-03/05/47-51. No build or hardware.
+- Result: The next agent picks from P0: housekeeping, the RV status audit, the HOST-01 RSA-CRT-2048 6F00 repro, EE11 RAM-pressure reclaim, external result review and one batched physical acceptance session.
+- Decision: The RV status audit (P0 item 2) must come before P1 coding, because several RV entries predate source fixes.
+- Artifacts/logs: none.

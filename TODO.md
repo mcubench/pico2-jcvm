@@ -1,6 +1,6 @@
 # Project TODO
 
-Updated 2026-11-26. Follow [AGENTS.md](AGENTS.md) and [SPEC.md](SPEC.md) for
+Updated 2026-11-27. Follow [AGENTS.md](AGENTS.md) and [SPEC.md](SPEC.md) for
 scope, fixtures and acceptance. Record evidence in [progress.md](progress.md).
 Detailed cases and earlier outcomes are in the [previous backlog](.agent/archive/2026-11-21-backlog-compaction/TODO.md)
 and its [archive index](.agent/archive/2026-11-21-backlog-compaction/README.md).
@@ -10,14 +10,122 @@ for completed substeps and their evidence.
 Use [HANDOFF](.agent/HANDOFF.md) for last observations and
 [external requests](.agent/EXT_REQUESTS.md) for pending external work.
 
-## Next work
+## Priorities (assessed 2026-11-27)
 
-- Review Windows option 1/2 results for `v0.2-rc1` and get user authorization before publishing. See WIN-MAXCRYPTO-RC-V0.2-RC1.
-- Finish CAPIN-01 linkage and recovery acceptance and the remaining CAPIN-05/06 negative fixtures. Verify the CAPIN-07 LOAD checks on ARM hardware.
-- Verify RAM-pressure heap reclamation on EE11 with the full symmetric KAT and GP cleanup. Capture APDU flash traffic and use the diagnostic heap log if failures recur. See `20261121-2154-ram-pressure-reclaim`.
-- Schedule BOOTSEL and power-loss acceptance when an identified board is available.
-- Finish external ExtendedLength and KeyPair validation and the supplemental
-  PQC campaign. Use the active request IDs in [EXT_REQUESTS.md](.agent/EXT_REQUESTS.md).
+Context: v0.2 is published. Current work targets **v0.3-rc\*** (`v0.3-rc1` =
+`b4adbe13`). Pick the highest open item in the order below. Items within a
+tier are also roughly ordered. Check `.agent/HANDOFF.md` and live processes
+first, because another session may already hold an item.
+
+Ranking rules: (1) a source-level defect against a SPEC invariant comes before
+acceptance-only work. (2) A defect that blocks a v0.3 release comes before
+general gaps. (3) Batch hardware work so that one normal-image flash covers
+several items. (4) Performance work waits for measurements.
+
+### P0 — v0.3-rc blockers and cheap closures
+
+1. **Housekeeping (short).** Remove the obsolete WIN-MAXCRYPTO-RC-V0.2-RC1
+   request from `EXT_REQUESTS.md`, since v0.2 is published. `inbox/converter_bug`
+   is an off-card Oracle converter defect, not a VM task, so record it only as a
+   note. The `inbox/problem_jcmathlib` F103 is already fixed
+   (`20261126-1440-jcmathlib-ec-keypair`).
+2. **Status audit of P1 review items (offline).** Several RV entries below are
+   older than later source fixes. For example, RV-03 and RV-05 were partly
+   corrected (see progress.md around the R01–R08 reconciliation record). Before
+   coding, mark each of RV-02/03/05/47/48/49/50/51 in this file as *fixed, needs
+   acceptance* or *still defective*, so that nobody redoes a fix.
+3. **HOST-01 Windows RSA-CRT-2048 `6F00` on `b4adbe13`.** This is the only open
+   functional failure from the v0.3-rc1 external run. Do option (a) from the
+   2026-11-26 non-reproduction record: an empty-card image with the
+   `b4adbe13` code on EE11, install jc32, then replay APDUs 1–7110 with serial
+   capture. Follow the long-run rules in AGENTS.md. If it still does not
+   reproduce, ask the tester for the serial log (option b).
+4. **RAM-pressure reclamation on EE11 (INV-15/16).** Use an empty normal
+   max_crypto image with the full symmetric KAT, GP cleanup and flash
+   telemetry. See `20261121-2154-ram-pressure-reclaim`. Release stability
+   depends on this.
+5. **Review returned external results** (WIN-ECTESTER-9B03A1E0,
+   WIN-KEYPAIR-107D7663, WIN-PQC-PERF-58B5EC0A) as soon as they arrive. They
+   are blocked until then, so do not wait on them.
+6. **One batched physical acceptance session (INV-18/22/27)** on a single
+   identified token with a normal image. Every item here already has an
+   offline fix and needs only a replay of an existing fixture:
+   - CAPIN-07 LOAD rejection and recovery
+   - CAPIN-04 + RV-43 method-entry allocation failure through an APDU
+   - RV-01 opcode-fetch recovery
+   - RV-60 `dup_x`
+   - RV-44 rollback-failure recovery
+   - RV-34 flash-identity logging (the flash itself is the check)
+
+### P1 — invariant defects (fix offline, then add them to the next batched hardware run)
+
+7. **Persistence semantics from the AGENTS.md 2026-11-19 directive (INV-14).**
+   These are platform guarantees, not extras:
+   - RV-47: references to objects created in an aborted transaction become null.
+   - RV-49: atomic `Util.arrayCopy`/`arrayFill` have their own transaction boundary.
+   - RV-50: NonAtomic writes stay outside rollback.
+   - RV-05 and RV-45: caches and capacity stay unchanged when a write fails.
+
+   Measure `sync_bytes` and `journal_bytes` for each change.
+8. **Interpreter memory safety (INV-18/22).** RV-03 bounds-before-metadata
+   (if the audit says it is still open), RV-02 nested-unwind coverage, RV-30
+   exception field kinds, CAPIN-09 `itableswitch` widths and CAPIN-10
+   `jsr`/`ret`.
+9. **CAP linkage verification (INV-18 commitment).** CAPIN-01 remaining cases
+   with the RV-55 A→B→C closure, the CAPIN-05 ROM InstanceFieldref fixture,
+   CAPIN-06 loader static dispatch and `nargs` fixtures, CAPIN-11 and RV-27.
+   CAPIN-08 waits for the RV-16 measurement.
+10. **API contract bugs (INV-07/08).** Each is small and self-contained, so
+    they suit short sessions:
+    - RV-51 catchable UtilException
+    - RV-48 `arrayCopyRepack`
+    - RV-39 CBC MAC IV reset
+    - RV-37 EC cofactor
+    - RV-57 transient EC private key with ECDSA
+    - RV-41 `receiveBytes`
+    - RV-42 outgoing length limits (recheck after the extended APDU work)
+    - RV-12 SCP03 13-byte case 3
+    - RV-08 Cipher operational bytes
+    - RV-40 crypto initialization across reset
+11. **PROFILE-01 ECTester follow-ups (INV-08).** Compressed P-224 and the
+    remaining cases out of 309/413. Classify each case as a defect, as
+    unsupported and honestly reported, or as a tester artefact.
+
+### P2 — larger tracks (after P0/P1, or in parallel in a second session)
+
+12. **PROFILE-01 Java body removal (INV-03).** 449 concrete Java method bodies
+    remain; this is a known invariant gap. Remove them one API class per step,
+    keeping CAP linkage and object layouts unchanged.
+13. **Power loss and BOOTSEL (INV-13/14).** PERSIST-02, PERSIST-03, BOOTSEL-01,
+    RV-35 and RV-36. These need a freshly wiped normal image and real USB power
+    removal, so schedule one dedicated session.
+14. **Firewall (INV-19).** CTX-01 (including `externalAccess=true`), CTX-02,
+    CTX-03, RV-59 and the GP-01 reinstall checks.
+15. **Reclamation and storage acceptance.** PERSIST-01, RESOURCE-01/02 and
+    STORE-01. Reuse the T8 evidence where possible.
+16. **Final acceptance gate.** AC-02 (three clean-flash passes) and AC-01
+    (Windows workflows). Run them last in each RC, because they depend on all
+    the other items.
+17. **Remaining HARD-01 / RV-20261103-28.** Parser fuzzing and malformed-input
+    recovery on ARM, after items 8 and 9.
+
+### P3 — measure first, optimise only if justified
+
+- RV-16 (a prerequisite for CAPIN-08), RV-17, RV-46, RV-56, RV-19, and RV-18
+  (document the limit now and implement later).
+- PERF-20261110-05 also saves RAM (about 16 B per handle). Move it up if item 4
+  shows an OOM margin problem. Then PERF-06, PERF-08 and the interpreter
+  reprofile.
+- Emulator only: RV-13, RV-14 and RV-15. Documentation: RV-20 and RV-21
+  (refresh once per RC). HOST-02 cold-reconnect timings.
+
+### Blocked or tracking only (do not pick)
+
+- CRYPTO-XDH-ABI-20261121 waits for external SDK inputs. The ML-DSA physical
+  run on 07E7/F42D happens only when one of those tokens is free.
+- GP-01 Windows DELETE watchdog confirmation, LONGOP-01 and JC-RESET-01 are
+  tracked under HOST-01. HMAC-01 reopens only if a new failure appears.
+- RSA/RSA-CRT 4096 physical runs are deferred at the user's request.
 
 ## CAP and interpreter safety
 
