@@ -68,7 +68,7 @@ several items. (4) Performance work waits for measurements.
    These are platform guarantees, not extras:
    - RV-47: references to objects created in an aborted transaction become null.
    - RV-49: standalone atomic primitive range writes enforce commit capacity before replacing the record. EE11 verified catchable BUFFER_FULL and unchanged destination for standalone fill and in-transaction repack. Power-loss recovery remains open.
-   - RV-50: EE11 verified non-atomic byte and short fill and repack across overlapping atomic writes and abort. Each case recorded 0 sync bytes and 256 journal bytes. Physical int, non-atomic writes under exhausted capacity and cold restore remain.
+   - RV-50: EE11 verified non-atomic byte and short fill and repack across overlapping atomic writes and abort. Each case recorded 0 sync bytes and 256 journal bytes. Both non-atomic operations also passed on a record too large for atomic commit capacity. Physical int and cold restore remain.
    - RV-05 and RV-45: cache ordering and snapshot capacity fixes are in source. Acceptance still needs broader failure and retry coverage.
 
    Measure `sync_bytes` and `journal_bytes` for each change. The EE11 standard transaction

@@ -1624,6 +1624,23 @@ public final class JCTransactionProbe extends Applet {
         }
         break;
       }
+      case (byte)130: {
+        byte[] pattern = JCSystem.makeTransientByteArray((short)2, JCSystem.CLEAR_ON_RESET);
+        pattern[0] = (byte)(transactionCapacityArray[0] ^ 0xff);
+        pattern[1] = (byte)(transactionCapacityArray[1] ^ 0xff);
+        JCSystem.beginTransaction();
+        short capacity = JCSystem.getUnusedCommitCapacity();
+        short filled = ArrayLogic.arrayFillGenericNonAtomic(
+            transactionCapacityArray, (short)0, (short)1, pattern, (short)0);
+        short copied = ArrayLogic.arrayCopyRepackNonAtomic(
+            pattern, (short)1, (short)1, transactionCapacityArray, (short)1);
+        boolean unchangedCapacity = JCSystem.getUnusedCommitCapacity() == capacity;
+        JCSystem.abortTransaction();
+        buffer[0] = (byte)(filled == 1 && copied == 2 && unchangedCapacity &&
+                          transactionCapacityArray[0] == pattern[0] &&
+                          transactionCapacityArray[1] == pattern[1] ? 1 : 0);
+        break;
+      }
       case (byte)129: {
         byte before = transactionCapacityArray[0];
         byte[] pattern = JCSystem.makeTransientByteArray((short)1, JCSystem.CLEAR_ON_RESET);

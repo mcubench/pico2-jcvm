@@ -34710,3 +34710,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Physical suite passed 23/23, including APDU 129 returning 019000. Cleanup passed. Serial showed no FAULT, PANIC or TEST:FAIL. Git diff whitespace passed.
 - Result: Both operations reported catchable BUFFER_FULL, preserved the value, and left caller capacity and transaction depth unchanged. Serial capture did not contain a command marker to attribute an individual flash record to APDU 129. Physical interruption remains open. No firmware source changes. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Artifacts/logs: `artifacts/results/p1-ee11-arraylogic-capacity/{probe,serial}.log`.
+
+## 2026-11-27 Verify oversized non-atomic ArrayLogic writes on EE11
+
+- Step-Id: `20261127-0847-arraylogic-capacity-bypass`
+- Task: RV-20261106-50 / INV-14
+- When: '2026-11-27 08:45' - '2026-11-27 08:47'
+- Model: `gpt-6`
+- Change: Added a standard JC305 case applying both non-atomic ArrayLogic operations to the persistent record that the preceding case established exceeds atomic commit capacity.
+- Validation: Physical suite passed 24/24 with cleanup PASS. APDU 130 returned 019000. Captured serial showed no FAULT, PANIC or TEST:FAIL. Git diff whitespace passed.
+- Result: Both changes survived abort and consumed no commit capacity. Serial had no attributable FS_APDU record for APDU 130. Physical int and cold restore remain open. No firmware source changes. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Artifacts/logs: `artifacts/results/p1-ee11-arraylogic-capacity-bypass/{probe,serial}.log`.
