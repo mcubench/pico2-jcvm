@@ -34699,3 +34699,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: The physical suite passed 22/22, including APDU 128 returning 019000. Cleanup passed. Serial showed no FAULT, PANIC or TEST:FAIL. Git diff whitespace passed.
 - Result: Full short values FEDC and 89AB survived abort without additional commit capacity. APDU 128 recorded eight writes, 58 logical write bytes, 0 sync bytes and 256 journal bytes. Persistent int, capacity exhaustion and cold restore remain open. No firmware source changes. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Artifacts/logs: `artifacts/results/p1-ee11-arraylogic-short/{probe,serial}.log`.
+
+## 2026-11-27 Verify ArrayLogic capacity rejection on EE11
+
+- Step-Id: `20261127-0845-arraylogic-capacity`
+- Task: RV-20261106-49 / INV-14
+- When: '2026-11-27 08:44' - '2026-11-27 08:45'
+- Model: `gpt-6`
+- Change: Added a standard JC305 test using the probe's 32767-element persistent array. It attempts standalone atomic fill and in-transaction atomic repack, then checks both reasons, destination value, transaction depth and unused capacity.
+- Validation: Physical suite passed 23/23, including APDU 129 returning 019000. Cleanup passed. Serial showed no FAULT, PANIC or TEST:FAIL. Git diff whitespace passed.
+- Result: Both operations reported catchable BUFFER_FULL, preserved the value, and left caller capacity and transaction depth unchanged. Serial capture did not contain a command marker to attribute an individual flash record to APDU 129. Physical interruption remains open. No firmware source changes. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Artifacts/logs: `artifacts/results/p1-ee11-arraylogic-capacity/{probe,serial}.log`.

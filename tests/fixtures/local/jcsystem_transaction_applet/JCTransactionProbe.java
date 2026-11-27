@@ -1624,6 +1624,36 @@ public final class JCTransactionProbe extends Applet {
         }
         break;
       }
+      case (byte)129: {
+        byte before = transactionCapacityArray[0];
+        byte[] pattern = JCSystem.makeTransientByteArray((short)1, JCSystem.CLEAR_ON_RESET);
+        pattern[0] = (byte)(before ^ 0xff);
+        boolean rejectedFill = false;
+        try {
+          ArrayLogic.arrayFillGeneric(transactionCapacityArray, (short)0,
+                                      (short)1, pattern, (short)0);
+        } catch (TransactionException expected) {
+          rejectedFill = expected.getReason() == TransactionException.BUFFER_FULL;
+        }
+        boolean standaloneUnchanged = transactionCapacityArray[0] == before;
+        JCSystem.beginTransaction();
+        short capacity = JCSystem.getUnusedCommitCapacity();
+        boolean rejectedCopy = false;
+        try {
+          ArrayLogic.arrayCopyRepack(pattern, (short)0, (short)1,
+                                      transactionCapacityArray, (short)0);
+        } catch (TransactionException expected) {
+          rejectedCopy = expected.getReason() == TransactionException.BUFFER_FULL;
+        }
+        boolean transactionUnchanged = transactionCapacityArray[0] == before &&
+            JCSystem.getUnusedCommitCapacity() == capacity &&
+            JCSystem.getTransactionDepth() == 1;
+        JCSystem.abortTransaction();
+        buffer[0] = (byte)(rejectedFill && standaloneUnchanged && rejectedCopy &&
+                          transactionUnchanged && transactionCapacityArray[0] == before
+                          ? 1 : 0);
+        break;
+      }
       case (byte)128: {
         arrayLogicShortArray = new short[2];
         short[] destination = arrayLogicShortArray;
