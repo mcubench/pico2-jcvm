@@ -158,6 +158,13 @@ refresh_target_usb "$root" && selected=true
 expect "$([[ "$selected" == false && "$target_identity_error" == *"does not match"* && "$target_address" == 3 ]] && echo true || echo false)" \
   "replaced_runtime_device_at_stable_path_is_rejected"
 
+# USB attributes can disappear independently while the board changes modes.
+rm -f "${device}/serial"
+selected=false
+refresh_target_usb "$root" && selected=true
+expect "$([[ "$selected" == false && -z "$target_identity_error" && "$target_address" == 3 ]] && echo true || echo false)" \
+  "selected_runtime_with_disappearing_serial_is_retryable"
+
 # Restore the original runtime identity for the BOOTSEL re-enumeration cases.
 printf 'AAAAAAAAAAAAAAAA\n' > "${device}/serial"
 printf '3\n' > "${device}/devnum"

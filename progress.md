@@ -34593,3 +34593,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Standalone capacity check verified on host. Applet-level capacity, physical interruption and sync_bytes/journal_bytes remain unmeasured. UF2 SHA-256 2bc743f3be8365573b7e1da39d11a7623ed28d8366cdff3296a5b827d80b5677; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Keep the physical acceptance gate.
 - Artifacts/logs: `build/p1-rv49-{host,arm,ee11-cycle,ee11-retry}.log`.
+
+## 2026-11-27 Handle disappearing USB attributes during flash discovery
+
+- Step-Id: `20261127-0828-usb-attribute-reenumeration`
+- Task: BOOTSEL-01 / RV-20261106-34
+- When: '2026-11-27 08:26' - '2026-11-27 08:28'
+- Model: `gpt-6`
+- Change: Read USB identity attributes through the checked reader. A disappeared serial on a selected runtime device makes the discovery pass retryable, while a different serial remains an identity error.
+- Validation: ./tools/test-flash-target-selection passed 23 checks, including missing serial and same-path replacement. A full chip-ID-pinned normal max_crypto EE11 cycle passed through CDC BOOTSEL, verified flash, and clean serial boot. Git diff whitespace passed.
+- Result: The simulated attribute-loss case is covered, and the hardware cycle validated the ordinary transition. The exact race was not observed again on hardware. UF2 SHA-256 6b5b610c33a547c78d55361198f0692ce23485dd6d5cae0ce29fc7948f30ec7c; chip EE116F37C7E4A04E.
+- Decision: Continue physical acceptance with the same token.
+- Artifacts/logs: `build/p0-usb-reenumeration-{host,ee11}.log`.

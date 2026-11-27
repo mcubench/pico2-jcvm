@@ -30,6 +30,11 @@ Historical tokens: `8E464F4E2BBC0A19`, `D92E743D5F640C0F`,
 - If the CDC BOOTSEL transition reports a chip-ID mismatch or a missing sysfs serial during re-enumeration, check USB product `2e8a:000f` through host access. When its stable serial matches the selected chip, retry from that confirmed BOOTSEL state with the same chip ID. This recovered both EE11 profiling cycles on 2026-11-22 and again on 2026-11-25 (`picotool` status 249, then "does not match USB path").
 - For a response stall, correlate applet return, filesystem sync, pending final response, IN submit/completion and USB/PCSC state. Idle IN with a pending final response once came from a stale time-extension retry state. Reader disappearance alone cannot identify that failure.
 
+- If a pinned flash reports a missing sysfs `serial` during CDC-to-BOOTSEL
+  transition, the old USB directory may be disappearing while it is read.
+  The flash wrapper treats the missing attribute as transient and waits for
+  the pinned chip ID. A confirmed identity mismatch still stops the flash.
+
 ## Campaigns and VPCD
 
 - Verify fixtures before acceptance. Use the pinned CAP and explicit current client JAR from AGENTS.md. Trust the JAR SHA-256 over the CSV version. Record image hash, reader, chip ID and serial telemetry per token. Normal empty-card images are required for acceptance. A development cycle preserves storage.

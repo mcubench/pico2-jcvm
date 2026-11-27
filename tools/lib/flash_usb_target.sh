@@ -24,8 +24,7 @@ flash_target_is_bootsel() {
 
 flash_read_usb_attribute() {
   local path="$1" output_name="$2" value
-  [[ -r "$path" ]] || return 1
-  IFS= read -r value < "$path" || return 1
+  IFS= read -r value 2>/dev/null < "$path" || return 1
   printf -v "$output_name" '%s' "$value"
 }
 
@@ -124,7 +123,9 @@ flash_validate_bootsel_device() {
 flash_validate_runtime_device() {
   local device="$1"
   local device_serial=""
-  [[ -r "${device}/serial" ]] && device_serial="$(<"${device}/serial")"
+  if ! flash_read_usb_attribute "${device}/serial" device_serial; then
+    [[ -z "$serial" && -z "$chipid" && "$target_selected" == 0 ]] || return 1
+  fi
   device_serial="${device_serial^^}"
 
   if [[ -n "$serial" && "$device_serial" != "$serial" ]]; then
@@ -163,13 +164,13 @@ flash_validate_runtime_device() {
 refresh_target_usb() {
   local sysfs_root="${1:-/sys/bus/usb/devices}"
   local device device_serial observed_chipid stale_path_error=""
+  local vendor product
   local selected_path_stale=0
   local -a bootsel_devices=() serial_devices=() chipid_runtime_devices=() rp_devices=()
   target_identity_error=""
 
   if [[ -n "$target_sysfs_path" ]]; then
     device="${sysfs_root}/${target_sysfs_path}"
-    local vendor product
     if flash_read_usb_attribute "${device}/idVendor" vendor && [[ "$vendor" == 2e8a ]] && \
        flash_read_usb_attribute "${device}/idProduct" product; then
       if [[ "$product" == 000f ]]; then
@@ -209,16 +210,15 @@ refresh_target_usb() {
   fi
 
   for device in "${sysfs_root}"/*; do
-    [[ -r "${device}/idVendor" && -r "${device}/idProduct" &&
-       -r "${device}/busnum" && -r "${device}/devnum" ]] || continue
-    [[ "$(<"${device}/idVendor")" == 2e8a ]] || continue
+    flash_read_usb_attribute "${device}/idVendor" vendor || continue
+    [[ "$vendor" == 2e8a ]] || continue
+    flash_read_usb_attribute "${device}/idProduct" product || continue
     rp_devices+=("${device}")
-    if [[ "$(<"${device}/idProduct")" == 000f ]]; then
+    if [[ "$product" == 000f ]]; then
       bootsel_devices+=("${device}")
       continue
     fi
-    if [[ -r "${device}/serial" ]]; then
-      device_serial="$(<"${device}/serial")"
+    if flash_read_usb_attribute "${device}/serial" device_serial; then
       device_serial="${device_serial^^}"
       [[ -z "$serial" || "$device_serial" != "$serial" ]] ||
         serial_devices+=("${device}")
