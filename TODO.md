@@ -84,7 +84,7 @@ several items. (4) Performance work waits for measurements.
    CAPIN-08 waits for the RV-16 measurement.
 10. **API contract bugs (INV-07/08).** Each is small and self-contained, so
     they suit short sessions:
-    - RV-51 catchable UtilException
+    - RV-51 native UtilException dispatch implemented. Applet catch verification remains.
     - RV-48 `arrayCopyRepack` width conversions implemented. Applet acceptance remains.
     - RV-39 CBC MAC IV reset
     - RV-37 EC cofactor
@@ -364,7 +364,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-50 — Keep generic NonAtomic writes outside applet rollback.** P2; owner: PERSIST-02/03 / PROFILE-01. Use distinct native storage behavior for byte/short/int and reconcile preexisting snapshots. Cover both orderings of atomic/nonatomic writes to one array, capacity exhaustion, overlap, abort and restore; do not route through ordinary journaled setters. [R50](docs/archive/review_20261106.md#r50--p2-generic-nonatomic-copy-and-fill-participate-in-applet-rollback)
 
-- [ ] **RV-20261106-51 — Dispatch native utility errors as catchable Java UtilException with reasons.** P2; owner: PROFILE-01 / HARD-01 / CTX-01. Provide ILLEGAL_VALUE versus TYPE_MISMATCHED through native exception dispatch. Test exact/superclass catches for invalid types and mismatched fills, assert reasons and complete valid work in the same and next APDU. [R51](docs/archive/review_20261106.md#r51--p2-native-utility-errors-cannot-be-caught-as-the-declared-utilexception)
+- [ ] **RV-20261106-51 — Dispatch native utility errors as catchable Java UtilException with reasons.** P2; owner: PROFILE-01 / HARD-01 / CTX-01. Native dispatch uses the ROM UtilException class and distinguishes ILLEGAL_VALUE from TYPE_MISMATCHED. Host tests check both reasons before dispatch. Verify wrong non-array object arguments and test exact/superclass catches for invalid types and mismatched fills, assert reasons and complete valid work in the same and next APDU. [R51](docs/archive/review_20261106.md#r51--p2-native-utility-errors-cannot-be-caught-as-the-declared-utilexception)
 
 - [ ] **RV-20261106-55 — Validate loaded-library dependency readiness before applet execution.** Implemented via CAPIN-01 (bounded eight-slot dependency-closure worklist); **acceptance only** (remaining A→B→C cases). P2; owner: GP-01 / PROFILE-01 / HARD-01. Cover A→B→C with missing/wrong-version/present C and C used only inside B's method body. Validate reachable dependencies with bounded traversal or an earlier library linking boundary, preserve supported load order, define cycle handling and demonstrate correction permits INSTALL. Direct-import and deletion guards are insufficient evidence. [R55](docs/archive/review_20261106.md#r55--p2-install-preflight-does-not-validate-the-dependency-closure-of-loaded-libraries)
 

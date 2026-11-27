@@ -455,6 +455,14 @@ bool isArrayLogicPrimitive(const jc_array_type type) {
   return false;
 }
 
+enum class UtilExceptionReason : uint16_t { IllegalValue = 1, TypeMismatched = 2 };
+
+[[noreturn]] void throwUtilException(const UtilExceptionReason reason) {
+  Context::getActiveContext().setPendingUtilExceptionReason(
+      static_cast<uint16_t>(reason));
+  throw Exceptions::UtilException;
+}
+
 int32_t readSignedArrayElement(JC_Array &array, const uint16_t index) {
   switch (array.getType()) {
   case JAVA_ARRAY_T_BYTE:
@@ -469,7 +477,7 @@ int32_t readSignedArrayElement(JC_Array &array, const uint16_t index) {
   case JAVA_ARRAY_T_REFERENCE:
     break;
   }
-  throw Exceptions::UtilException;
+  throwUtilException(UtilExceptionReason::IllegalValue);
 }
 
 jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
@@ -484,7 +492,7 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
   }
   if (!isArrayLogicPrimitive(source->getType()) ||
       !isArrayLogicPrimitive(destination->getType())) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::IllegalValue);
   }
 
   // The primitive range API encodes elements in big-endian order.
@@ -492,7 +500,7 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
       static_cast<uint32_t>(length) * source->getEntrySize();
   const uint16_t destination_width = destination->getEntrySize();
   if (byte_length % destination_width != 0) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::IllegalValue);
   }
   const uint32_t destination_length = byte_length / destination_width;
   const uint32_t destination_end =
@@ -526,10 +534,10 @@ jshort_t fillArrayRange(const jref_t destinationRef,
   }
   if (!isArrayLogicPrimitive(destination->getType()) ||
       !isArrayLogicPrimitive(pattern->getType())) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::IllegalValue);
   }
   if (destination->getType() != pattern->getType()) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::TypeMismatched);
   }
 
   const uint16_t width = destination->getEntrySize();
@@ -589,10 +597,10 @@ jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCompareGeneric(
   checkArrayRange(*second, secondOffset, length);
   if (!isArrayLogicPrimitive(first->getType()) ||
       !isArrayLogicPrimitive(second->getType())) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::IllegalValue);
   }
   if (first->getType() != second->getType()) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::TypeMismatched);
   }
 
   for (jshort_t index = 0; index < length; ++index) {
@@ -624,10 +632,10 @@ jshort_t fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFindGeneric(
     throw Exceptions::ArrayIndexOutOfBoundsException;
   }
   if (value_array->getType() != JAVA_ARRAY_T_BYTE) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::IllegalValue);
   }
   if (!isArrayLogicPrimitive(array->getType())) {
-    throw Exceptions::UtilException;
+    throwUtilException(UtilExceptionReason::IllegalValue);
   }
 
   const uint16_t element_bytes = array->getEntrySize();

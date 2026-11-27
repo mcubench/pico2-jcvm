@@ -109,6 +109,7 @@ private:
   uint16_t pending_system_exception_reason = 1;
   /// Reason code for the next VM-raised CryptoException.
   uint16_t pending_crypto_exception_reason = 1;
+  uint16_t pending_util_exception_reason = 1;
   uint16_t pending_pin_exception_reason = 1;
   /// Reason code for the next VM-raised TransactionException.
   uint16_t pending_transaction_exception_reason = 4;
@@ -281,6 +282,14 @@ public:
   uint16_t consumePendingPINExceptionReason() noexcept {
     const auto reason = pending_pin_exception_reason;
     pending_pin_exception_reason = 1;
+    return reason;
+  }
+  void setPendingUtilExceptionReason(uint16_t reason) noexcept {
+    pending_util_exception_reason = reason;
+  }
+  uint16_t consumePendingUtilExceptionReason() noexcept {
+    const auto reason = pending_util_exception_reason;
+    pending_util_exception_reason = 1;
     return reason;
   }
   void setPendingTransactionExceptionReason(uint16_t reason) noexcept;

@@ -352,6 +352,20 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
     this->doThrow(reference);
     return true;
   }
+  case Exceptions::UtilException: {
+    constexpr auto package_id = ROM_PACKAGE_INDEX_JAVACARDX_FRAMEWORK_UTIL;
+    constexpr auto token =
+        ROM_CLASS_EXPORT_TOKEN_JAVACARDX_FRAMEWORK_UTIL_UTILEXCEPTION;
+    const auto class_index = HTONS(Export_Handler(Package(package_id))
+        .getExportedClassOffset(token));
+    const auto reference = this->context.getHeap().addRuntimeException(
+        package_id, class_index);
+    const auto reason = this->context.consumePendingUtilExceptionReason();
+    this->context.getHeap().getInstance(reference)->setField_Short(
+        0, static_cast<jshort_t>(reason));
+    this->doThrow(reference);
+    return true;
+  }
   case Exceptions::TransactionException:
   case Exceptions::PINException: {
     const bool transaction = exception == Exceptions::TransactionException;

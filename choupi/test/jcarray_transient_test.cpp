@@ -586,12 +586,25 @@ int main() {
     std::cerr << "incomplete byte-to-short packing was accepted\n";
     return 1;
   } catch (jcvm::Exceptions error) {
-    if (error != jcvm::Exceptions::UtilException) {
+    if (error != jcvm::Exceptions::UtilException ||
+        jcvm::Context::getActiveContext().consumePendingUtilExceptionReason() != 1) {
       std::cerr << "incomplete byte-to-short packing raised the wrong exception\n";
       return 1;
     }
   }
 
+  try {
+    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayFillGeneric(
+        bytesRef, 0, 1, shortsRef, 0);
+    std::cerr << "mismatched primitive fill was accepted\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::UtilException ||
+        jcvm::Context::getActiveContext().consumePendingUtilExceptionReason() != 2) {
+      std::cerr << "mismatched primitive fill raised the wrong reason\n";
+      return 1;
+    }
+  }
   const auto byte_array_end = static_cast<jcvm::jshort_t>(storedBytes->size());
   if (fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
           shortsRef, 0, 0, bytesRef, byte_array_end) != byte_array_end) {

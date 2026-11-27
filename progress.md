@@ -34629,3 +34629,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Native host coverage passed; Java UtilException reason dispatch and applet-level acceptance remain open. This step did not measure ArrayLogic flash traffic. UF2 SHA-256 06881388391c46a08b86c51933ffd6c066894318eb4563792ab12ee6b9328df9; chip EE116F37C7E4A04E.
 - Decision: Continue RV-51 exception dispatch and applet verification.
 - Artifacts/logs: `build/p1-rv48-{host,arm,ee11-cycle}.log`.
+
+## 2026-11-27 Dispatch native ArrayLogic UtilException reasons
+
+- Step-Id: `20261127-0833-arraylogic-util-exception-dispatch`
+- Task: RV-20261106-51 / INV-07
+- When: '2026-11-27 08:31' - '2026-11-27 08:33'
+- Model: `gpt-6`
+- Change: Added UtilException to the VM exception dispatcher using its generated ROM export metadata and runtime-owned exception instance. ArrayLogic native paths set ILLEGAL_VALUE for invalid primitive operations and TYPE_MISMATCHED when fill or compare operands have differing supported types.
+- Validation: ./tools/test-jcarray passed with native reason checks for incomplete repack and mismatched fill. The warning-free ARM max_crypto build and full JCVM cycle passed on EE11. Serial showed no FAULT, PANIC or TEST:FAIL. Git diff whitespace passed.
+- Result: Native reason generation and target boot verified. Java catch and superclass behavior and wrong non-array object arguments still need applet-level coverage. No flash traffic was measured. UF2 SHA-256 51c33b7957cb1aefce91598de719910a5409a113cd96871ae20f862032a60e2f; chip EE116F37C7E4A04E.
+- Decision: Keep applet acceptance open.
+- Artifacts/logs: `build/p1-rv51-{host,arm,ee11-cycle}.log`.
