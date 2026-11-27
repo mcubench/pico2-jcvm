@@ -53,7 +53,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 128),
+        "--case", type=int, action="append", choices=(*range(1, 131), 132),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -330,6 +330,12 @@ def main() -> int:
                         "All five SHA digests accept 5 KiB in one doFinal",
                     ),
                     (125, b"\x3f", "method-entry frame limit and APDU recovery"),
+                    (126, b"\x01", "ArrayLogic exact and superclass exception catches"),
+                    (127, b"\x01", "non-atomic byte ArrayLogic writes survive abort"),
+                    (128, b"\x01", "non-atomic short ArrayLogic writes survive abort"),
+                    (129, b"\x01", "atomic ArrayLogic rejects over-capacity writes"),
+                    (130, b"\x01", "non-atomic ArrayLogic updates an oversized record"),
+                    (132, b"\x01", "non-atomic int ArrayLogic writes survive abort"),
                 )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]

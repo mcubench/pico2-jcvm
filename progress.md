@@ -34767,3 +34767,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The intermittent run-1 `6999` was not reproduced. The likely mechanism is lost applet selection (a reset or failed reselect) while CCID kept routing to the applet. It is unattributed and does not involve the health-record diff, which touches only counters and GET DATA.
 - Decision: Track it under HOST-01. The Windows campaign records `6999` frequency through the health record. Repackage from this commit.
 - Artifacts/logs: `artifacts/results/windows-pkg-15fdcc5d-07E7-20261127T0812Z/`, `artifacts/results/windows-pkg-15fdcc5d-07E7-repro3-20261127T0856Z/`.
+
+## 2026-11-27 Run ArrayLogic cases in the VPCD transaction suite
+
+- Step-Id: `20261127-1116-arraylogic-vpcd-regression`
+- Task: RV-20261106-48/49/50/51
+- When: '2026-11-27 08:51' - '2026-11-27 11:16'
+- Model: `gpt-6`
+- Change: Registered six ArrayLogic applet cases in the VPCD runner. Fixed a host link regression introduced by the Pico-only DF7E health record by omitting that handler on PC_VERSION.
+- Validation: Rebuilt max_crypto PC. VPCD reported 8 passes including ATR, SELECT, and all six ArrayLogic cases. The GP GET DATA unit suite passed 29 checks including the DF7E TLV and value forms. Git diff whitespace passed.
+- Result: Host verification covers Java exceptions and ArrayLogic byte, short and int rollback, atomic capacity rejection and non-atomic capacity bypass. The Pico DF7E code path is unchanged. No new flash or power interruption evidence.
+- Artifacts/logs: `build/p1-arraylogic-vpcd-{build,host,emulator}.log`, `build/p1-df7e-unit.log`.

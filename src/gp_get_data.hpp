@@ -14,7 +14,9 @@
 
 // Fills the proprietary DF7E health record (BER-TLV, see
 // docs/supported-profile.md) and returns its length, or 0 on failure.
+#ifndef PC_VERSION
 extern "C" size_t choupi_health_record(uint8_t *out, size_t capacity);
+#endif
 
 namespace gp {
 
@@ -166,12 +168,14 @@ inline bool get_data_object(uint8_t p1, uint8_t p2, const uint8_t *&data,
     length = sizeof(kCplcData);
     return true;
   }
+#ifndef PC_VERSION
   if (p1 == 0xdf && p2 == 0x7e) {
     static uint8_t health[64];
     length = choupi_health_record(health, sizeof(health));
     data = health;
     return length != 0;
   }
+#endif
   return false;
 }
 
