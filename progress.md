@@ -34605,3 +34605,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: The simulated attribute-loss case is covered, and the hardware cycle validated the ordinary transition. The exact race was not observed again on hardware. UF2 SHA-256 6b5b610c33a547c78d55361198f0692ce23485dd6d5cae0ce29fc7948f30ec7c; chip EE116F37C7E4A04E.
 - Decision: Continue physical acceptance with the same token.
 - Artifacts/logs: `build/p0-usb-reenumeration-{host,ee11}.log`.
+
+## 2026-11-27 Verify standard Java Card transaction behavior on EE11
+
+- Step-Id: `20261127-0829-ee11-transaction-regression`
+- Task: P1 persistence regression / INV-14
+- When: '2026-11-27 08:28' - '2026-11-27 08:29'
+- Model: `gpt-6`
+- Change: Ran the existing physical JCSystem transaction probe on the normal max_crypto image exercised by the USB wrapper cycle.
+- Validation: Runner exited 0 with 18 passes, including field commit and abort, catchable BUFFER_FULL, non-atomic copy surviving rollback and commit capacity consumption. GlobalPlatform cleanup passed. Serial showed no TEST:FAIL, FAULT or PANIC. Git diff whitespace passed.
+- Result: 23 recorded FS_APDU entries totaled 180224 sync bytes and 1024 journal bytes. Per-entry maxima were 45056 and 256 bytes respectively. These are aggregates for the standard suite. Generic ArrayLogic paths and physical fault injection were outside this probe. UF2 SHA-256 6b5b610c33a547c78d55361198f0692ce23485dd6d5cae0ce29fc7948f30ec7c; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Preserve targeted ArrayLogic and interrupted-rollback acceptance as open.
+- Artifacts/logs: `artifacts/results/p1-ee11-transaction/{probe,serial}.log`.

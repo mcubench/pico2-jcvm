@@ -71,7 +71,9 @@ several items. (4) Performance work waits for measurements.
    - RV-50: NonAtomic fill now uses the rollback-bypassing range writer. Verify through an applet on EE11 and capture flash traffic.
    - RV-05 and RV-45: cache ordering and snapshot capacity fixes are in source. Acceptance still needs broader failure and retry coverage.
 
-   Measure `sync_bytes` and `journal_bytes` for each change.
+   Measure `sync_bytes` and `journal_bytes` for each change. The EE11 standard transaction
+   regression passed 18 checks with aggregate flash telemetry. ArrayLogic-
+   specific measurements and physical fault injection remain open.
 8. **Interpreter memory safety (INV-18/22).** RV-03 bounds-before-metadata
    (if the audit says it is still open), RV-02 nested-unwind coverage, RV-30
    exception field kinds, CAPIN-09 `itableswitch` widths and CAPIN-10

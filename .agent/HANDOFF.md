@@ -9,7 +9,9 @@ Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
   returned `AA 9000`; Windows serial and starting state are requested.
 - P0 RAM-pressure run passed 208/208 checks and returned EE11 to an ISD-only
   state. EE11 (`EE116F37C7E4A04E`, reader suffix `00 00`) runs the normal
-  max_crypto validation image from the RV-49 worktree based on `5cd29bc3`. The preceding KAT logs are in
+  max_crypto validation image built from `dc9db152` during the USB wrapper
+  verification. The standard transaction probe passed 18/18 with cleanup
+  (`artifacts/results/p1-ee11-transaction/`). The preceding KAT logs are in
   `artifacts/results/p0-rc1-ee11/`. Check live processes before PC/SC work.
 
 ## Last observed physical state
