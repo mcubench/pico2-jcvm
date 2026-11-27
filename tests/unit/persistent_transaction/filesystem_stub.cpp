@@ -290,6 +290,11 @@ extern "C" uint8_t fs_commit_tag(const uint8_t *, uint8_t) {
   return 0;
 }
 
+extern "C" uint8_t fs_init(void) {
+  files = durable_files;
+  return 0;
+}
+
 extern "C" uint8_t fs_sync(void) {
   ++sync_count;
   if (choupi_persistent_write_transaction_active() != 0) return 0;

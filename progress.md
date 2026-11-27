@@ -34521,3 +34521,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Expected frame-capacity recovery and legal dup_x behavior passed. Allocation injection, invalid operand and cross-AID SIO physical cases remain open. Firmware SHA-256 7247cafab31eda8df242dc07d6eddbfeb60a7b110d2ffb52fcc091445af5aafd. Reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Retain the scoped hardware evidence and continue the remaining P0 checks.
 - Artifacts/logs: `artifacts/results/p0-rc1-ee11/{frame,dup-x}-{install,apdu,cleanup}.log`.
+
+## 2026-11-27 Restore the rollback-recovery host test build
+
+- Step-Id: `20261127-0816-rv44-host-fs-init`
+- Task: P0 RV-20261106-44
+- When: '2026-11-27 08:14' - '2026-11-27 08:16'
+- Model: `gpt-6`
+- Change: Added the missing fs_init ABI to the persistent transaction test double and mirrored reloading the durable record map.
+- Validation: The original build failed because the local FFI header did not declare fs_init. After the fix, ./tools/test-persistent-transaction exited 0 with TEST:SUMMARY fail=0, including rollback write, erase, and sync failures and combined commit/rollback sync failure. Git diff whitespace passed.
+- Result: Restored repeatable host verification. The injected failures run in a test double, so the physical recovery gate stays open. No firmware source or flash behavior changed.
+- Decision: Track the physical recovery gate until equivalent hardware evidence exists.
+- Artifacts/logs: `build/p0-rv44-host.log`.
