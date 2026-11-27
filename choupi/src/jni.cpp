@@ -479,22 +479,37 @@ jshort_t copyArrayRange(const jref_t sourceRef, const jshort_t sourceOffset,
   auto source = heap.getArray(sourceRef);
   auto destination = heap.getArray(destinationRef);
   checkArrayRange(*source, sourceOffset, length);
-  checkArrayRange(*destination, destinationOffset, length);
-  if (source->getType() != destination->getType()) {
-    throw Exceptions::ArrayStoreException;
+  if (destinationOffset < 0) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+  if (!isArrayLogicPrimitive(source->getType()) ||
+      !isArrayLogicPrimitive(destination->getType())) {
+    throw Exceptions::UtilException;
   }
 
+  // The primitive range API encodes elements in big-endian order.
   const uint32_t byte_length =
       static_cast<uint32_t>(length) * source->getEntrySize();
+  const uint16_t destination_width = destination->getEntrySize();
+  if (byte_length % destination_width != 0) {
+    throw Exceptions::UtilException;
+  }
+  const uint32_t destination_length = byte_length / destination_width;
+  const uint32_t destination_end =
+      static_cast<uint32_t>(destinationOffset) + destination_length;
+  if (destination_end > destination->size() || destination_end > INT16_MAX) {
+    throw Exceptions::ArrayIndexOutOfBoundsException;
+  }
+
   std::vector<uint8_t> elements(byte_length);
   source->copyPrimitiveEntriesTo(static_cast<uint16_t>(sourceOffset),
                                  static_cast<uint16_t>(length),
                                  elements.data());
   destination->copyPrimitiveEntriesFrom(
       static_cast<uint16_t>(destinationOffset),
-      static_cast<uint16_t>(length), elements.data(), atomic);
+      static_cast<uint16_t>(destination_length), elements.data(), atomic);
 
-  return static_cast<jshort_t>(destinationOffset + length);
+  return static_cast<jshort_t>(destination_end);
 }
 
 jshort_t fillArrayRange(const jref_t destinationRef,

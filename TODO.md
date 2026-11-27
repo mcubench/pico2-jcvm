@@ -85,7 +85,7 @@ several items. (4) Performance work waits for measurements.
 10. **API contract bugs (INV-07/08).** Each is small and self-contained, so
     they suit short sessions:
     - RV-51 catchable UtilException
-    - RV-48 `arrayCopyRepack`
+    - RV-48 `arrayCopyRepack` width conversions implemented. Applet acceptance remains.
     - RV-39 CBC MAC IV reset
     - RV-37 EC cofactor
     - RV-57 transient EC private key with ECDSA
@@ -358,7 +358,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-47 — Invalidate transaction-created object references on abort or force safe session recovery.** P2; owner: PERSIST-02/03 / CTX-01 / HARD-01. Track allocation lifetime through native runtime state. Test aliases in locals/transient arrays, abort, null comparison and dereference, preexisting objects, commit and nested/SIO returns; prove stale handles cannot alias later allocations. Ordinary record rollback alone does not close this. [R47](docs/archive/review_20261106.md#r47--p2-transaction-abort-leaves-references-to-newly-allocated-objects-usable)
 
-- [ ] **RV-20261106-48 — Implement native primitive array packing and unpacking contracts.** P2; owner: PROFILE-01 / API-03. Cover all byte/short/int cross-type directions, big-endian bit preservation, converted destination range/end offset, invalid multiples, zero length and same-array overlap. Reject booleans/references with the documented utility error; same-type copying is insufficient. [R48](docs/archive/review_20261106.md#r48--p2-arraycopyrepack-rejects-the-cross-type-conversions-it-is-intended-to-perform)
+- [ ] **RV-20261106-48 — Implement native primitive array packing and unpacking contracts.** P2; owner: PROFILE-01 / API-03. Native repack now uses the canonical big-endian encoding for all byte/short/int directions and rejects unsupported types and incomplete destination elements. Host coverage passed for conversions, bounds, zero length and overlap. Physical applet acceptance and Java exception reasons (RV-51) remain open. [R48](docs/archive/review_20261106.md#r48--p2-arraycopyrepack-rejects-the-cross-type-conversions-it-is-intended-to-perform)
 
 - [ ] **RV-20261106-49 — Give atomic ArrayLogic copy/fill a native transaction boundary.** P2; owner: PERSIST-02/03 / PROFILE-01 / HARD-01. Enforce capacity and all-or-nothing persistent updates outside/inside caller transactions without committing the caller. Inject failures at every destination write and check unchanged destination on rejection, catch/recovery and fresh restore; validate physical interruption separately. [R49](docs/archive/review_20261106.md#r49--p2-atomic-generic-copy-and-fill-have-no-standalone-atomic-transaction-boundary)
 

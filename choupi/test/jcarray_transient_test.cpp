@@ -543,14 +543,69 @@ int main() {
     return 1;
   }
   std::cout << "TEST:PASS jni_array_fill_primitive_types\n";
+  using jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack;
+  const auto packed_end =
+      fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          bytesRef, 0, 2, shortsRef, 1);
+  const auto unpacked_end =
+      fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          shortsRef, 1, 1, bytesRef, 0);
+  if (packed_end != 2 || unpacked_end != 2 ||
+      storedShorts->getShortEntry(1) != 0x0102 ||
+      storedBytes->getByteEntry(0) != 1 || storedBytes->getByteEntry(1) != 2) {
+    std::cerr << "byte/short repack failed\n";
+    return 1;
+  }
+#ifdef JCVM_INT_SUPPORTED
+  auto storedInts = heap.getArray(intsRef);
+  storedInts->setIntEntry(0, jcvm::signedIntFromBits(0x80ff5678u));
+  if (fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          intsRef, 0, 1, bytesRef, 2) != 6 ||
+      static_cast<uint8_t>(storedBytes->getByteEntry(2)) != 0x80 ||
+      static_cast<uint8_t>(storedBytes->getByteEntry(3)) != 0xff ||
+      storedBytes->getByteEntry(4) != 0x56 ||
+      storedBytes->getByteEntry(5) != 0x78 ||
+      fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          bytesRef, 2, 4, intsRef, 1) != 2 ||
+      storedInts->getIntEntry(1) != storedInts->getIntEntry(0) ||
+      fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          intsRef, 0, 1, shortsRef, 1) != 3 ||
+      static_cast<uint16_t>(storedShorts->getShortEntry(1)) != 0x80ff ||
+      storedShorts->getShortEntry(2) != 0x5678 ||
+      fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          shortsRef, 1, 2, intsRef, 2) != 3 ||
+      storedInts->getIntEntry(2) != storedInts->getIntEntry(0)) {
+    std::cerr << "int repack failed\n";
+    return 1;
+  }
+#endif
+  std::cout << "TEST:PASS jni_array_repack_primitive_widths\n";
   try {
     jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
         bytesRef, 0, 1, shortsRef, 0);
-    std::cerr << "copy between incompatible array types was accepted\n";
+    std::cerr << "incomplete byte-to-short packing was accepted\n";
     return 1;
   } catch (jcvm::Exceptions error) {
-    if (error != jcvm::Exceptions::ArrayStoreException) {
-      std::cerr << "incompatible array copy raised the wrong exception\n";
+    if (error != jcvm::Exceptions::UtilException) {
+      std::cerr << "incomplete byte-to-short packing raised the wrong exception\n";
+      return 1;
+    }
+  }
+
+  const auto byte_array_end = static_cast<jcvm::jshort_t>(storedBytes->size());
+  if (fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+          shortsRef, 0, 0, bytesRef, byte_array_end) != byte_array_end) {
+    std::cerr << "zero-length repack rejected the destination end\n";
+    return 1;
+  }
+  try {
+    fr_gouv_ssi_nativeimpl_NativeImplementation_arrayCopyRepack(
+        shortsRef, 0, 1, bytesRef, byte_array_end - 1);
+    std::cerr << "repack accepted insufficient destination space\n";
+    return 1;
+  } catch (jcvm::Exceptions error) {
+    if (error != jcvm::Exceptions::ArrayIndexOutOfBoundsException) {
+      std::cerr << "bad destination range raised the wrong exception\n";
       return 1;
     }
   }

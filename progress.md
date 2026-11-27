@@ -34617,3 +34617,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 23 recorded FS_APDU entries totaled 180224 sync bytes and 1024 journal bytes. Per-entry maxima were 45056 and 256 bytes respectively. These are aggregates for the standard suite. Generic ArrayLogic paths and physical fault injection were outside this probe. UF2 SHA-256 6b5b610c33a547c78d55361198f0692ce23485dd6d5cae0ce29fc7948f30ec7c; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Preserve targeted ArrayLogic and interrupted-rollback acceptance as open.
 - Artifacts/logs: `artifacts/results/p1-ee11-transaction/{probe,serial}.log`.
+
+## 2026-11-27 Implement native ArrayLogic primitive repacking
+
+- Step-Id: `20261127-0831-arraylogic-repack-widths`
+- Task: RV-20261106-48 / INV-07
+- When: '2026-11-27 08:29' - '2026-11-27 08:31'
+- Model: `gpt-6`
+- Change: Used canonical big-endian primitive range encoding for byte, short and int conversions. Checked source length, complete destination elements, converted destination bounds and return offset before writing. Existing overlap and atomicity paths remain in use.
+- Validation: ./tools/test-jcarray passed, including all six cross-width directions, signed bit patterns, invalid packing multiple, destination bounds, zero length and existing overlap. Host build retained its existing header warnings. Warning-free max_crypto ARM build and full EE11 JCVM cycle passed. Serial showed no FAULT, PANIC or TEST:FAIL. Git diff whitespace passed.
+- Result: Native host coverage passed; Java UtilException reason dispatch and applet-level acceptance remain open. This step did not measure ArrayLogic flash traffic. UF2 SHA-256 06881388391c46a08b86c51933ffd6c066894318eb4563792ab12ee6b9328df9; chip EE116F37C7E4A04E.
+- Decision: Continue RV-51 exception dispatch and applet verification.
+- Artifacts/logs: `build/p1-rv48-{host,arm,ee11-cycle}.log`.
