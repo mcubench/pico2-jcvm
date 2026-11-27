@@ -34509,3 +34509,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: 208 recorded FS_APDU entries reported 0 total sync bytes and 5888 total journal bytes (largest individual entry 768). Normal telemetry confirms the physical workload and cleanup passed. It does not identify individual RAM-collection triggers. UF2 SHA-256 7247cafab31eda8df242dc07d6eddbfeb60a7b110d2ffb52fcc091445af5aafd. Chip EE116F37C7E4A04E, PC/SC reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Decision: Close the scoped physical cutoff and cleanup check. Continue prioritized physical acceptance while the external results are pending.
 - Artifacts/logs: `artifacts/results/p0-rc1-ee11/ram-pressure-{flash,pre,post,kat,serial}.log`.
+
+## 2026-11-27 Verify frame capacity and the legal dup_x matrix on EE11
+
+- Step-Id: `20261127-0814-ee11-frame-dupx`
+- Task: CAPIN-04 and RV-20261106-60
+- When: '2026-11-27 07:58' - '2026-11-27 08:14'
+- Model: `gpt-6`
+- Change: Reused the normal fdbaa813 max_crypto image and the existing frame and legal dup_x fixtures.
+- Validation: The transaction probe returned 3F9000 at 64 frames, 6F00 at the expected 65-frame rejection, and 3F9000 at 64 frames on the same connection afterward. Installing the dup_x matrix exercised all 24 legal operands. SELECT, the reference/int/mixed probes and both control APDUs returned 9000. Cleanup verified an ISD-only inventory after each fixture.
+- Result: Expected frame-capacity recovery and legal dup_x behavior passed. Allocation injection, invalid operand and cross-AID SIO physical cases remain open. Firmware SHA-256 7247cafab31eda8df242dc07d6eddbfeb60a7b110d2ffb52fcc091445af5aafd. Reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Retain the scoped hardware evidence and continue the remaining P0 checks.
+- Artifacts/logs: `artifacts/results/p0-rc1-ee11/{frame,dup-x}-{install,apdu,cleanup}.log`.

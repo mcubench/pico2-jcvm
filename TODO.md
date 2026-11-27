@@ -56,9 +56,9 @@ several items. (4) Performance work waits for measurements.
    identified token with a normal image. Every item here already has an
    offline fix and needs only a replay of an existing fixture:
    - CAPIN-07 LOAD rejection and recovery
-   - CAPIN-04 + RV-43 method-entry allocation failure through an APDU
+   - CAPIN-04 frame limit passed on EE11. RV-43 APDU allocation injection remains.
    - RV-01 opcode-fetch recovery
-   - RV-60 `dup_x`
+   - RV-60 legal `dup_x` matrix and typed cases passed on EE11. Remaining coverage below.
    - RV-44 rollback-failure recovery
    - RV-34 flash-identity logging completed on EE11 (see progress).
 
@@ -144,7 +144,7 @@ several items. (4) Performance work waits for measurements.
 
 ### CAPIN-04
 
-- [ ] Verify the frame boundary on hardware and exercise injected method-entry allocation failure through the full APDU path (RV-20261106-43).
+- [ ] EE11 verified the 64/65-frame boundary and same-session recovery. Exercise injected method-entry allocation failure through the full APDU path (RV-20261106-43).
 
 ### CAPIN-05
 
@@ -374,7 +374,7 @@ See the [review](docs/archive/review_20261106.md) and [detailed cases](.agent/ar
 
 - [ ] **RV-20261106-59 — Prevent unreachable foreign-array cycles from becoming permanent GC roots.** P2; owner: PERSIST-01 / CTX-01 / HARD-01. Separate registry edges from reachable roots using a validated cross-heap lifetime strategy. Exercise two/three-heap cycles and diamonds with/without real roots, different collection orders, edge breaking, package deletion and handle reuse. Use production Context enumeration and measure reclaimed/live counts plus bounded repeated-work RAM growth while preserving live foreign references and owner collision isolation. [R59](docs/archive/review_20261106.md#r59--p2-foreign-array-root-routing-can-keep-an-unreachable-cross-heap-cycle-alive)
 
-- [ ] **RV-20261106-60 — Audit acceptance of the corrected positive-depth dup_x implementation.** P1; owner: HARD-01 / PROFILE-01 / CTX-01. The RMI stack-helper suite covers all M/N byte combinations, exact values, underflow/overflow recovery, reference-owner metadata, and int pairs; `./tools/test-rmi-registry` passes. The generated VPCD CAP now executes all 24 legal `dup_x` operands through applet INSTALL and passes the constructor depth check; invalid `0x17` reaches interpreter dispatch and is rejected with `vm=6F00` before applet publication. The VPCD interpreter now executes all 24 legal operands and catches all 232 invalid byte values in one APDU; a separate caught-invalid APDU and the next APDU both return `9000`. Interpreter typed cases preserve an APDU reference identity, duplicate a complete int pair, and duplicate an int pair above a short (`dup_x 0x23`). A cross-AID SIO VPCD CAP now sends a client-owned array reference through `dup_x 0x12`, returns it from the service, and verifies identity at the client; the focused probe passes. Remaining: obtain physical acceptance. The latest elevated USB refresh still sees three runtime `2e8a:0009` devices and no ROM `2e8a:000f`, so no physical flash was performed. Use integer-range checks before pointer arithmetic as in R03. [R60](docs/archive/review_20261106.md#r60--p1-positive-depth-dup_x-duplicates-the-wrong-stack-segment)
+- [ ] **RV-20261106-60 — Audit acceptance of the corrected positive-depth dup_x implementation.** P1; owner: HARD-01 / PROFILE-01 / CTX-01. The RMI stack-helper suite covers all M/N byte combinations, exact values, underflow/overflow recovery, reference-owner metadata, and int pairs; `./tools/test-rmi-registry` passes. The generated VPCD CAP now executes all 24 legal `dup_x` operands through applet INSTALL and passes the constructor depth check; invalid `0x17` reaches interpreter dispatch and is rejected with `vm=6F00` before applet publication. The VPCD interpreter now executes all 24 legal operands and catches all 232 invalid byte values in one APDU; a separate caught-invalid APDU and the next APDU both return `9000`. Interpreter typed cases preserve an APDU reference identity, duplicate a complete int pair, and duplicate an int pair above a short (`dup_x 0x23`). A cross-AID SIO VPCD CAP now sends a client-owned array reference through `dup_x 0x12`, returns it from the service, and verifies identity at the client; the focused probe passes. EE11 passed the 24 legal operands and typed reference/int/mixed cases. Physical invalid-operand and cross-AID SIO coverage remain open. Use integer-range checks before pointer arithmetic as in R03. [R60](docs/archive/review_20261106.md#r60--p1-positive-depth-dup_x-duplicates-the-wrong-stack-segment)
 
 - [ ] **RV-20261106-12 — Accept 13-byte no-data case-3 SCP03 commands.** Owner: GP-01. Test valid independent MAC vectors with/without Le, malformed lengths and failed-MAC recovery; derive minimum length from supported APDU cases. [R12](docs/archive/review_20261106.md#r12--p2-scp03-rejects-a-valid-no-data-case-3-protected-command)
 

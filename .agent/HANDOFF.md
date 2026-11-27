@@ -29,8 +29,9 @@ Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
 - Continue the Windows ECTester comparison against `39fd4199` using the new
   `9b03a1e0` package, and continue the KeyPair external regression using
   [EXT_REQUESTS.md](EXT_REQUESTS.md). Track ECTester follow-ups in PROFILE-01.
-- CAPIN-07 and CAPIN-04 need scoped hardware verification. Start with the
-  existing offline evidence referenced in [TODO.md](../TODO.md).
+- Continue P0 physical acceptance. CAPIN-04 frame limit and RV-60 legal
+  matrix passed on EE11, and fixture cleanup returned it to ISD-only.
+  Remaining subcases are tracked in [TODO.md](../TODO.md).
 - Continue batched P0 physical checks on EE11. RSA/RSA-CRT 4096 physical runs
   remain deferred at user request.
 - v0.2 is published per the prioritized TODO. Current release work targets v0.3.
