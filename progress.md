@@ -34721,3 +34721,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Physical suite passed 24/24 with cleanup PASS. APDU 130 returned 019000. Captured serial showed no FAULT, PANIC or TEST:FAIL. Git diff whitespace passed.
 - Result: Both changes survived abort and consumed no commit capacity. Serial had no attributable FS_APDU record for APDU 130. Physical int and cold restore remain open. No firmware source changes. UF2 SHA-256 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Artifacts/logs: `artifacts/results/p1-ee11-arraylogic-capacity-bypass/{probe,serial}.log`.
+
+## 2026-11-27 Verify non-atomic ArrayLogic readback across EE11 firmware reboot
+
+- Step-Id: `20261127-0849-arraylogic-reboot-readback`
+- Task: RV-20261106-50 / INV-13 and INV-14
+- When: '2026-11-27 08:47' - '2026-11-27 08:49'
+- Model: `gpt-6`
+- Change: Added a read-only APDU to inspect both bytes of the oversized transaction probe array. Installed from ISD-only, applied non-atomic changes and abort, then ran a storage-preserving full JCVM cycle.
+- Validation: Initial bytes were 0000, update returned 019000, and readback was FFFF immediately and after reboot and reselect. Warning-free normal max_crypto cycle passed, with no serial TEST:FAIL, FAULT or PANIC. GP cleanup returned to ISD only. Git diff whitespace passed.
+- Result: Durable restoration passed across firmware reboot. Actual USB power removal, interruption testing and physical int remain open. No attributable flash traffic was captured for the update in this run. Before UF2 bf79a8a4671b014926238ee94a078c7f4e14e20121c16ce7d2d0fcf0f1668169; after UF2 6a1da7215b7ad61688d2f28f7926d31534bf25ebcb1db632c5da2612cadaeb0a; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Artifacts/logs: `artifacts/results/p1-ee11-arraylogic-reboot/`.

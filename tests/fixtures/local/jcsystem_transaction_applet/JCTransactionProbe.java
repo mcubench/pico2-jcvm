@@ -1624,6 +1624,12 @@ public final class JCTransactionProbe extends Applet {
         }
         break;
       }
+      case (byte)131: {
+        buffer[0] = transactionCapacityArray[0];
+        buffer[1] = transactionCapacityArray[1];
+        length = 2;
+        break;
+      }
       case (byte)130: {
         byte[] pattern = JCSystem.makeTransientByteArray((short)2, JCSystem.CLEAR_ON_RESET);
         pattern[0] = (byte)(transactionCapacityArray[0] ^ 0xff);
