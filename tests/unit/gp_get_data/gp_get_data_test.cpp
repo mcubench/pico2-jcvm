@@ -5,6 +5,13 @@
 #include <cstdlib>
 #include <cstring>
 
+extern "C" size_t choupi_health_record(uint8_t *out, size_t capacity) {
+  constexpr uint8_t record[] = {0xdf, 0x7e, 0x02, 0x01, 0x02};
+  if (capacity < sizeof(record)) return 0;
+  std::memcpy(out, record, sizeof(record));
+  return sizeof(record);
+}
+
 namespace {
 int checks = 0;
 
@@ -168,6 +175,17 @@ int main() {
              }) &&
              response_length == 0,
          "reject_invalid_application_aid");
+
+  expect(gp::write_get_data_response(0xdf, 0x7e, response.data(),
+                                     response.size(), response_length, true) &&
+             response_length == 7 && response[0] == 0xdf &&
+             response[5] == 0x90,
+         "health_record_ca_returns_tlv");
+  expect(gp::write_get_data_response(0xdf, 0x7e, response.data(),
+                                     response.size(), response_length, false) &&
+             response_length == 4 && response[0] == 0x01 &&
+             response[1] == 0x02 && response[2] == 0x90,
+         "health_record_cb_returns_value");
 
   std::printf("TEST:SUMMARY pass=%d fail=0\n", checks);
   return EXIT_SUCCESS;

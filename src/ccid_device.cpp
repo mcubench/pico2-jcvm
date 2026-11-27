@@ -478,10 +478,27 @@ void service_pending_final_response() {
   }
 }
 
+// Per-power-session APDU counters for the DF7E health record (RAM only).
+uint32_t health_apdus = 0;
+uint32_t health_sw6f00 = 0;
+uint32_t health_last_6f00_index = 0;
+uint16_t health_last_6f00_command = 0;
+
 void send_response(uint8_t rhport, uint8_t type, const uint8_t *payload,
                    size_t payload_length, uint8_t status = 0,
                    uint8_t error = 0, uint8_t specific = 0) {
   const uint8_t sequence = rx_buffer[6];
+  if (type == 0x80 && rx_buffer[0] == 0x6f) {
+    ++health_apdus;
+    if (payload != nullptr && payload_length >= 2 &&
+        payload[payload_length - 2] == 0x6f &&
+        payload[payload_length - 1] == 0x00) {
+      ++health_sw6f00;
+      health_last_6f00_index = health_apdus;
+      health_last_6f00_command = static_cast<uint16_t>(
+          (static_cast<uint16_t>(rx_buffer[10]) << 8) | rx_buffer[11]);
+    }
+  }
   if (payload_length + 10 > sizeof(tx_buffer)) {
     payload_length = 0;
     status = 0x40; // failed
@@ -1478,6 +1495,15 @@ const usbd_class_driver_t kApplicationDrivers[] = {
     usb_reset_interface_driver,
 };
 } // namespace
+
+extern "C" void choupi_ccid_health_counters(uint32_t *apdus, uint32_t *sw6f00,
+                                            uint32_t *last_6f00_index,
+                                            uint16_t *last_6f00_command) {
+  *apdus = health_apdus;
+  *sw6f00 = health_sw6f00;
+  *last_6f00_index = health_last_6f00_index;
+  *last_6f00_command = health_last_6f00_command;
+}
 
 extern "C" void choupi_ccid_task(void) {
   const uint8_t rhport = pending_rhport;

@@ -12,10 +12,13 @@
 # 'pqcperf'   = menu 2 -> PERFORMANCE TEST -> 4 Only post-quantum algorithms, with
 #               the 1.8.6/jc32 CAP and client (ML-KEM/ML-DSA keygen, encaps/decaps,
 #               sign/verify; 5-10 minutes). Answers the prompts like 'symmetric'.
-$mode = 'all'
+# 'jcmathlib' = loads jcmathlib-unit_tests.cap with the descriptor-preserving
+#               loader and replays the BnShiftRight APDU (seconds).
+# run-all.ps1 sets PICO2_RUN_MODE; when it is unset, the line below decides.
+$mode = if ($env:PICO2_RUN_MODE) { $env:PICO2_RUN_MODE } else { 'all' }
 $reader = 'Pico2 JCVM CCID 0'
 # -----------------------------------------------------------------------------
-if (@('all', 'symmetric', 'pqc', 'pqcperf') -notcontains $mode) { throw "mode must be 'all', 'symmetric', 'pqc' or 'pqcperf'" }
+if (@('all', 'symmetric', 'pqc', 'pqcperf', 'jcmathlib') -notcontains $mode) { throw "mode must be 'all', 'symmetric', 'pqc', 'pqcperf' or 'jcmathlib'" }
 $root = (Get-Location).Path
 $image = Join-Path $root 'firmware\@UF2_NAME@'
 $expected = '@UF2_SHA@'
@@ -23,8 +26,13 @@ $gp = Join-Path $root 'tools\gp.jar'
 $client = Join-Path $root 'tools\AlgTestJClient_v1.8.5.jar'
 $cap = Join-Path $root 'applet.cap'
 if ($mode -like 'pqc*') { $client = Join-Path $root 'tools\AlgTestJClient_v1.8.6_jc32.jar'; $cap = Join-Path $root 'applet-jc32.cap' }
+if ($mode -eq 'jcmathlib') { $cap = Join-Path $root 'jcmathlib-unit_tests.cap' }
 $capture = Join-Path $root 'tools\capture-object-deletion.ps1'
-foreach ($f in @($image, $gp, $client, $cap, $capture)) { if (-not (Test-Path $f)) { throw "Missing $f; run this block in the extracted package directory" } }
+$health = Join-Path $root 'tools\health.ps1'
+function Save-Health([string]$Name) {
+  & powershell -NoProfile -ExecutionPolicy Bypass -File $health -Reader $reader -Gp $gp -OutFile (Join-Path $run "$Name.txt") | Out-Null
+}
+foreach ($f in @($image, $gp, $client, $cap, $capture, $health)) { if (-not (Test-Path $f)) { throw "Missing $f; run this block in the extracted package directory" } }
 $run = Join-Path $root ('results\' + $mode + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss'))
 New-Item -ItemType Directory -Force -Path $run | Out-Null
 function Invoke-Gp([string]$Name, [string]$Arguments) {
@@ -58,14 +66,22 @@ $null = $cap_proc.Handle
 Start-Sleep -Seconds 3
 
 # 4. Install the JCAlgTest CAP (1.8.5/jc305, or 1.8.6/jc32 for 'pqc'/'pqcperf') on the empty card.
-if ((Invoke-Gp 'gp-install' "--install `"$cap`"") -ne 0) { New-Item -ItemType File -Path $stop | Out-Null; throw "CAP install failed; see $run\gp-install*.txt" }
+if ($mode -eq 'jcmathlib') {
+  $loader = Start-Process -FilePath 'java' -ArgumentList "-cp `"$root\tools\loader;$gp`" LoadCapWithDescriptor `"$reader`" `"$cap`"" -NoNewWindow -Wait -PassThru -RedirectStandardOutput (Join-Path $run 'gp-install.txt') -RedirectStandardError (Join-Path $run 'gp-install.err.txt')
+  if ($loader.ExitCode -ne 0) { New-Item -ItemType File -Path $stop | Out-Null; throw "CAP load failed; see $run\gp-install*.txt" }
+} elseif ((Invoke-Gp 'gp-install' "--install `"$cap`"") -ne 0) { New-Item -ItemType File -Path $stop | Out-Null; throw "CAP install failed; see $run\gp-install*.txt" }
 Invoke-Gp 'gp-list-after-install' '--list' | Out-Null
 Get-Content (Join-Path $run 'gp-list-after-install.txt')
 
 # 5. Run the JCAlgTest client. Results and the client log go to $run.
 $card = "pico2_maxcrypto_@HEAD_SHORT@_$chip"
+Save-Health 'health-before'
 $started = Get-Date
-if (@('all', 'pqc') -contains $mode) {
+if ($mode -eq 'jcmathlib') {
+  $client_rc = Invoke-Gp 'jcmathlib-apdu' '--apdu 00A404000B4A434D6174684C69625554 --apdu B024010020D0910DC146EC6027B9318706FD14D6D86199B1324AF4B9B13B4D7D1C09E89DDB00 --debug'
+  $ok = Select-String -Path (Join-Path $run 'jcmathlib-apdu.txt') -Pattern '684886E0A3763013DC98C3837E8A6B6C30CCD899257A5CD89DA6BE8E04F44EED 9000' -SimpleMatch -Quiet
+  Write-Host "JCMATHLIB result=$(if ($ok) { 'PASS' } else { 'FAIL' })"
+} elseif (@('all', 'pqc') -contains $mode) {
   $op = if ($mode -eq 'pqc') { 'ALG_SUPPORT_BASIC' } else { 'ALG_PERFORMANCE_STATIC' }
   $client_proc = Start-Process -FilePath 'java' -ArgumentList "-jar `"$client`" -op $op -cardname $card -fresh -outpath `"$run`"" -WorkingDirectory $run -NoNewWindow -Wait -PassThru
   $client_rc = $client_proc.ExitCode
@@ -94,6 +110,16 @@ if (@('all', 'pqc') -contains $mode) {
   $client_rc = $client_proc.ExitCode
 }
 $finished = Get-Date
+Save-Health 'health-after'
+Get-Content (Join-Path $run 'health-after.txt')
+$uninstall_seconds = ''
+if ($mode -eq 'all') {
+  # GP-01: timed DELETE right after the long run, then the registry.
+  $uninstall_seconds = (Measure-Command { Invoke-Gp 'uninstall' "-d --uninstall `"$cap`"" | Out-Null }).TotalSeconds
+  Invoke-Gp 'gp-list-after-uninstall' '--list' | Out-Null
+  Write-Host "UNINSTALL seconds=$uninstall_seconds"
+  Save-Health 'health-after-uninstall'
+}
 
 # 6. Stop the capture, record identity and pack the results for return.
 New-Item -ItemType File -Path $stop | Out-Null
@@ -112,7 +138,8 @@ Get-Content (Join-Path $run 'serial-capture-console.txt') -Tail 3
   "firmware_sha256=$actual",
   "cap_sha256=$((Get-FileHash $cap -Algorithm SHA256).Hash.ToLowerInvariant())",
   "client_jar_sha256=$((Get-FileHash $client -Algorithm SHA256).Hash.ToLowerInvariant())",
-  "capture_exit_code=$($cap_proc.ExitCode)"
+  "capture_exit_code=$($cap_proc.ExitCode)",
+  "uninstall_seconds=$uninstall_seconds"
 ) | Set-Content (Join-Path $run 'run-identity.txt')
 & java -version 2>&1 | ForEach-Object { "$_" } | Add-Content (Join-Path $run 'run-identity.txt')
 Compress-Archive -Path $run -DestinationPath ($run + '.zip') -Force

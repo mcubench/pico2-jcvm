@@ -1,0 +1,35 @@
+# One external campaign for this package. Run in the extracted package folder:
+#   powershell -ExecutionPolicy Bypass -File run-all.ps1
+# It runs each mode of run-test.ps1 on a freshly flashed card, then the cold
+# reconnect timings, and packs every result into one ZIP to return.
+# Default order keeps the steps that need you first and leaves 'all' last, so
+# the long run can finish unattended. Pass -Modes to run a subset or resume.
+param(
+  [string[]]$Modes = @('pqc', 'pqcperf', 'jcmathlib', 'reconnect', 'symmetric', 'all'),
+  [string]$Reader = 'Pico2 JCVM CCID 0'
+)
+$root = $PSScriptRoot
+$campaign = Join-Path $root ('results\campaign_' + (Get-Date -Format 'yyyyMMdd_HHmmss'))
+New-Item -ItemType Directory -Force -Path $campaign | Out-Null
+$summary = Join-Path $campaign 'campaign-summary.txt'
+"package=@HEAD_SHORT@ uf2_sha256=@UF2_SHA@ start=$((Get-Date).ToString('o'))" | Set-Content $summary
+foreach ($mode in $Modes) {
+  if ($mode -eq 'reconnect') {
+    Write-Host '== reconnect: three cold unplug/replug timings (no BOOTSEL) =='
+    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'tools\measure-windows-reconnect.ps1') -BuildLabel normal -ImageSha256 '@UF2_SHA@' -ReaderPrefix $Reader -Runs 3 -OutputPath (Join-Path $campaign 'reconnect.csv')
+    "reconnect exit_code=$LASTEXITCODE" | Add-Content $summary
+    continue
+  }
+  [void](Read-Host "== $mode == Unplug the Pico 2, hold BOOTSEL while reconnecting it, then press Enter")
+  $before = @(Get-ChildItem (Join-Path $root 'results') -Filter "$($mode)_*.zip" -ErrorAction SilentlyContinue | ForEach-Object FullName)
+  $env:PICO2_RUN_MODE = $mode
+  & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'run-test.ps1')
+  $rc = $LASTEXITCODE
+  Remove-Item Env:PICO2_RUN_MODE
+  $zip = Get-ChildItem (Join-Path $root 'results') -Filter "$($mode)_*.zip" -ErrorAction SilentlyContinue | Where-Object { $before -notcontains $_.FullName } | Select-Object -First 1
+  if ($zip) { Copy-Item $zip.FullName $campaign }
+  "$mode exit_code=$rc zip=$(if ($zip) { $zip.Name } else { 'none' }) end=$((Get-Date).ToString('o'))" | Add-Content $summary
+}
+Get-Content $summary
+Compress-Archive -Path $campaign -DestinationPath ($campaign + '.zip') -Force
+Write-Host "CAMPAIGN DONE: return $campaign.zip"

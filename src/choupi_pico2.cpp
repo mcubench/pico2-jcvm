@@ -10,6 +10,7 @@
 #include "hardware/timer.h"
 #include "hardware/watchdog.h"
 #include "hardware/structs/watchdog.h"
+#include "hardware/structs/powman.h"
 #include "pico/bootrom.h"
 #include "tusb.h"
 #include "reader_led.hpp"
@@ -94,7 +95,69 @@ uint32_t watchdog_recovery_stage = 0;
 uint32_t watchdog_recovery_context = 0;
 uint32_t watchdog_recovery_origin = 0;
 
+// Boot snapshot for the DF7E health record. POWMAN scratch survives watchdog
+// and software resets but not power-on reset, so the boot count shows silent
+// resets within one USB power session without writing flash.
+constexpr uint32_t kHealthBootMagic = 0x48454c54; // "HELT"
+uint32_t health_boot_count = 0;
+uint32_t health_chip_reset = 0;
+uint8_t health_boot_flags = 0;
+uint32_t health_recovery_pc = 0;
+uint32_t health_recovery_info = 0;
+
+void health_record_boot() {
+  if (powman_hw->scratch[0] != kHealthBootMagic) {
+    powman_hw->scratch[0] = kHealthBootMagic;
+    powman_hw->scratch[1] = 0;
+  }
+  health_boot_count = ++powman_hw->scratch[1];
+  health_chip_reset = powman_hw->chip_reset;
+  health_boot_flags = static_cast<uint8_t>(
+      (watchdog_recovery_by_watchdog ? 0x01 : 0) |
+      (watchdog_recovery_pending ? 0x02 : 0));
+  health_recovery_pc = watchdog_recovery_pc;
+  health_recovery_info = watchdog_recovery_info;
+}
+
+uint8_t *put32(uint8_t *out, uint32_t value) {
+  *out++ = static_cast<uint8_t>(value >> 24);
+  *out++ = static_cast<uint8_t>(value >> 16);
+  *out++ = static_cast<uint8_t>(value >> 8);
+  *out++ = static_cast<uint8_t>(value);
+  return out;
+}
+
 } // namespace
+
+extern "C" void choupi_ccid_health_counters(uint32_t *apdus, uint32_t *sw6f00,
+                                            uint32_t *last_6f00_index,
+                                            uint16_t *last_6f00_command);
+
+// Layout (version 1) is documented in docs/supported-profile.md.
+extern "C" size_t choupi_health_record(uint8_t *out, size_t capacity) {
+  constexpr size_t kValueLength = 36;
+  if (out == nullptr || capacity < kValueLength + 3) return 0;
+  uint32_t apdus = 0, sw6f00 = 0, last_index = 0;
+  uint16_t last_command = 0;
+  choupi_ccid_health_counters(&apdus, &sw6f00, &last_index, &last_command);
+  uint8_t *p = out;
+  *p++ = 0xdf;
+  *p++ = 0x7e;
+  *p++ = static_cast<uint8_t>(kValueLength);
+  *p++ = 0x01; // record version
+  *p++ = health_boot_flags;
+  p = put32(p, health_boot_count);
+  p = put32(p, health_chip_reset);
+  p = put32(p, health_recovery_pc);
+  p = put32(p, health_recovery_info);
+  p = put32(p, to_ms_since_boot(get_absolute_time()));
+  p = put32(p, apdus);
+  p = put32(p, sw6f00);
+  p = put32(p, last_index);
+  *p++ = static_cast<uint8_t>(last_command >> 8);
+  *p++ = static_cast<uint8_t>(last_command);
+  return static_cast<size_t>(p - out);
+}
 
 // Support the standard 1200-baud CDC reset used by host flashing tools.
 // Defer the ROM call until the main loop so it never runs inside TinyUSB's
@@ -222,6 +285,7 @@ int main_arm(void) {
     // should report a new VM trace, not repeat this diagnostic indefinitely.
     watchdog_hw->scratch[0] = 0;
   }
+  health_record_boot();
 
   stdio_init_all();
   // Normal firmware must initialize storage and the VM immediately after USB

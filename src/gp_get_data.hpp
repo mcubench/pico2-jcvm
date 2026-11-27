@@ -12,6 +12,10 @@
 #define CHOUPI_CPLC_PREPERSONALIZATION_EQUIPMENT_ID 0x00000000UL
 #endif
 
+// Fills the proprietary DF7E health record (BER-TLV, see
+// docs/supported-profile.md) and returns its length, or 0 on failure.
+extern "C" size_t choupi_health_record(uint8_t *out, size_t capacity);
+
 namespace gp {
 
 // Card Recognition Data and synthetic CPLC data for the card-manager
@@ -162,6 +166,12 @@ inline bool get_data_object(uint8_t p1, uint8_t p2, const uint8_t *&data,
     length = sizeof(kCplcData);
     return true;
   }
+  if (p1 == 0xdf && p2 == 0x7e) {
+    static uint8_t health[64];
+    length = choupi_health_record(health, sizeof(health));
+    data = health;
+    return length != 0;
+  }
   return false;
 }
 
@@ -185,7 +195,7 @@ inline bool write_get_data_response(uint8_t p1, uint8_t p2,
   if (!include_tlv) {
     // ISO GET DATA (INS=CB) returns the data-object value. GlobalPlatform's
     // proprietary form (INS=CA) returns the complete BER-TLV object.
-    const size_t tag_length = p1 == 0x9f && p2 == 0x7f ? 2 : 1;
+    const size_t tag_length = p1 != 0x00 ? 2 : 1; // 9F7F, DF7E
     if (data_length <= tag_length) return false;
     const size_t length_offset = tag_length;
     const uint8_t value_length = data[length_offset];

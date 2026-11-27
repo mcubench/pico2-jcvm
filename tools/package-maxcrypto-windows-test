@@ -52,10 +52,18 @@ client_jc32="$("${repo_root}/tools/fixture-path" jcalgtest.client.1.8.6)"
 gp_jar="${repo_root}/.local-toolchain/globalplatformpro/tool/target/gp.jar"
 capture_ps1="${repo_root}/tools/capture-object-deletion.ps1"
 run_template="${repo_root}/tools/templates/maxcrypto-windows-run.ps1.in"
-for f in "${cap}" "${client}" "${cap_jc32}" "${client_jc32}" "${gp_jar}" "${capture_ps1}" "${run_template}"; do
+run_all_template="${repo_root}/tools/templates/windows-run-all.ps1.in"
+health_ps1="${repo_root}/tools/windows-health.ps1"
+reconnect_ps1="${repo_root}/tools/measure-windows-reconnect.ps1"
+# User-supplied JCMathLib unit-test CAP (bytes unchanged), pinned by hash.
+jcmathlib_cap="${repo_root}/inbox/problem_jcmathlib/unit_tests.cap"
+jcmathlib_cap_sha=9ad6debfcf7afb5c6cafc4d1ac598ce6c6e4397fe3cb415941ee18184c5ded3a
+for f in "${cap}" "${client}" "${cap_jc32}" "${client_jc32}" "${gp_jar}" "${capture_ps1}" "${run_template}" "${run_all_template}" "${health_ps1}" "${reconnect_ps1}" "${jcmathlib_cap}"; do
   [[ -s "${f}" ]] || die "missing input: ${f}"
 done
 [[ -d "${client_lib}" ]] || die "missing client lib directory: ${client_lib}"
+[[ "$(sha256sum "${jcmathlib_cap}" | cut -d' ' -f1)" == "${jcmathlib_cap_sha}" ]] || \
+  die "JCMathLib CAP hash mismatch: ${jcmathlib_cap}"
 
 "${repo_root}/tools/fixture-path" --verify >/dev/null
 "${repo_root}/tools/package-empty-card-uf2" "${firmware}" "${uf2_artifact}" >/dev/null
@@ -70,6 +78,13 @@ cp "${client_jc32}" "${stage}/tools/AlgTestJClient_v1.8.6_jc32.jar"
 cp "${gp_jar}" "${stage}/tools/gp.jar"
 cp "${capture_ps1}" "${stage}/tools/capture-object-deletion.ps1"
 cp -L "${client_lib}"/*.jar "${stage}/tools/lib/"
+cp "${health_ps1}" "${stage}/tools/health.ps1"
+cp "${reconnect_ps1}" "${stage}/tools/measure-windows-reconnect.ps1"
+cp "${jcmathlib_cap}" "${stage}/jcmathlib-unit_tests.cap"
+# Precompiled so the Windows side needs only a JRE.
+mkdir -p "${stage}/tools/loader"
+"${repo_root}/tools/env" javac --release 8 -cp "${gp_jar}" -d "${stage}/tools/loader" \
+  "${repo_root}/tools/LoadCapWithDescriptor.java"
 
 sha() { sha256sum "$1" | cut -d' ' -f1; }
 uf2_sha="$(sha "${stage}/firmware/${uf2_name}")"
@@ -119,6 +134,7 @@ worktree_files="$(git -C "${repo_root}" status --porcelain --ignore-submodules=a
 
 run_block="$(sed -e "s|@UF2_NAME@|${uf2_name}|g" -e "s|@UF2_SHA@|${uf2_sha}|g" -e "s|@HEAD_SHORT@|${head_short}|g" "${run_template}")"
 printf '%s\n' "${run_block}" > "${stage}/run-test.ps1"
+sed -e "s|@UF2_SHA@|${uf2_sha}|g" -e "s|@HEAD_SHORT@|${head_short}|g" "${run_all_template}" > "${stage}/run-all.ps1"
 
 cat > "${stage}/README.md" <<EOF
 # Pico 2 JCVM max_crypto — object deletion ON, empty card
@@ -141,7 +157,25 @@ This package is prepared for external Windows testing. Validation of this exact 
 - PQC client (modes \`pqc\` and \`pqcperf\`): \`tools/AlgTestJClient_v1.8.6_jc32.jar\`, SHA-256 \`${client_jc32_sha}\`
 - GPPro: \`tools/gp.jar\`
 
-## Run the test from Windows (one block)
+## Recommended: one campaign script (closes all open Windows checks)
+
+Requirements: Java 8 or newer on \`PATH\`, and only this Pico 2 attached as a smart-card reader.
+
+\`\`\`powershell
+powershell -ExecutionPolicy Bypass -File run-all.ps1
+\`\`\`
+
+It runs \`pqc\`, \`pqcperf\`, \`jcmathlib\`, three cold-reconnect timings, \`symmetric\` and \`all\` in that order. Before each card mode it asks you to reconnect the Pico 2 with BOOTSEL held, and it reflashes the empty card. After \`all\` it times GPPro DELETE and lists the registry. The steps that need you come first, so \`all\` (5–8 hours) can run unattended. To resume or run a subset, use for example \`-Modes symmetric,all\`. Return the single \`results\\campaign_<timestamp>.zip\`.
+
+Every run records the card's health record (\`health-before.txt\`, \`health-after.txt\`) through GET DATA \`DF7E\`: boot count, reset cause, APDU count and \`6F00\` count since power-on. These show silent card resets even when the serial capture is missing. \`health_boot_count\` must stay 1 for the whole run.
+
+If you run the JCAlgTest client yourself instead, read the record right after the run, without unplugging the card, and return its output with the client log:
+
+\`\`\`powershell
+powershell -ExecutionPolicy Bypass -File tools\\health.ps1 -Reader 'Pico2 JCVM CCID 0'
+\`\`\`
+
+## Run a single mode from Windows (one block)
 
 Requirements: Java 8 or newer on \`PATH\`, Windows PowerShell 5.1 or PowerShell 7, and only this Pico 2 attached as a smart-card reader. If any other reader is present, the client asks for a reader number.
 
@@ -154,6 +188,7 @@ Requirements: Java 8 or newer on \`PATH\`, Windows PowerShell 5.1 or PowerShell 
 | \`all\` | \`2 -> PERFORMANCE TEST\` -> \`1 -> All algorithms\` | 5–8 hours | command line: \`-op ALG_PERFORMANCE_STATIC -cardname <name> -fresh -outpath <dir>\` |
 | \`pqc\` | support test (\`ALG_SUPPORT_BASIC\`) with the 1.8.6/jc32 CAP and client | minutes | command line: \`-op ALG_SUPPORT_BASIC -cardname <name> -fresh -outpath <dir>\`; expected: all 19 rows in the \`PQCKeyFactory\`, \`KEM ALG_ML_KEM\` and \`Signature ML-DSA\` sections report \`yes\` |
 | \`pqcperf\` | \`2 -> PERFORMANCE TEST\` -> \`4 -> Only post-quantum algorithms\` with the 1.8.6/jc32 CAP and client | 5–10 minutes | like \`symmetric\`, but the block types \`2\`, \`4\`; expected: 33 measurements (ML-KEM-512/768/1024 keygen, encapsulate, decapsulate; ML-DSA-44/65/87 keygen, sign, verify, init), no error rows. One slow ML-DSA-65/87 \`expandSeed()\` measurement is a flash journal rollover and is expected |
+| \`jcmathlib\` | none: loads \`jcmathlib-unit_tests.cap\` with the descriptor-preserving loader and replays the BnShiftRight APDU | seconds | expected: \`JCMATHLIB result=PASS\` |
 | \`symmetric\` | \`2 -> PERFORMANCE TEST\` -> \`2 -> Only algorithms WITHOUT asymmetric cryptography\` | 1–3 hours | the 1.8.5 client has no switch for this; the block starts it with \`-cardname\` and \`-outpath\` and types \`2\`, \`2\` after each prompt appears in the client log |
 
 The block does the following:

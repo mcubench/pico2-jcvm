@@ -34743,3 +34743,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Physical suite passed 25/25 with cleanup PASS. APDU 132 returned 019000. Serial showed no FAULT, PANIC or TEST:FAIL. Fixture hash verification and Git diff whitespace passed.
 - Result: Full 32-bit values FEDCBA98 and 89ABCDEF survived abort without extra commit capacity. APDU 132 recorded eight writes, 82 logical write bytes, 0 sync bytes and 256 journal bytes. USB power removal and interruption tests remain open. No firmware source changes. UF2 SHA-256 6a1da7215b7ad61688d2f28f7926d31534bf25ebcb1db632c5da2612cadaeb0a; chip EE116F37C7E4A04E; reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
 - Artifacts/logs: `artifacts/results/p1-ee11-arraylogic-int/{probe,serial}.log`.
+
+## 2026-11-27 DF7E health record and Windows campaign runner 35
+
+- Step-Id: `20261127-0915-df7e-health-runner`
+- Task: `HOST-01`, `HOST-02`, `GP-01`, `AC-01` (external Windows closure)
+- When: '2026-11-27 08:40' - '2026-11-27 09:15'
+- Model: `claude-opus-5-5`
+- Change: The tester runs JCAlgTest on Windows without a whole-run serial capture, so the card now reports its own health. A proprietary ISD GET DATA `DF7E` (CA: TLV, CB: value) returns the boot count since power-on (POWMAN scratch, survives watchdog/software/BOOTSEL resets, cleared by POR), POWMAN `CHIP_RESET`, the retained watchdog trace, uptime, APDU and `6F00` counts since boot, and the last `6F00` index and CLA/INS. No flash writes. Windows packages gain `tools\health.ps1` (decoder), `run-all.ps1` (pqc, pqcperf, jcmathlib, 3 cold reconnects, symmetric, all), a `jcmathlib` mode with the precompiled descriptor loader, health snapshots before and after every run, and timed GP DELETE plus `--list` after `all`. `tools/check-windows-results.py` checks a returned ZIP mechanically. Documented in `docs/supported-profile.md`.
+- Validation: `./tools/test-gp-get-data` 29/29 (two new DF7E cases). `./tools/build arm --profile max_crypto` passed, no warnings, normal mode. `./tools/cycle choupi --serial EE116F37C7E4A04E` CYCLE:PASS (`artifacts/logs/cycle-choupi-20261127T075452Z.log`). On EE11, GPPro `80CADF7E00` returned `DF7E24 01 02 00000001 00010000 …` (boot 1, HAD_POR) and `00CBDF7E00` the bare value. After `./tools/flash` via BOOTSEL without power loss, boot count read 2, which shows that the counter survives non-POR resets. Checker self-test on a synthetic campaign that used the real EE11 record flagged boot_count=2 and passed the other criteria. PowerShell scripts were not executed (no PowerShell on this host). The `6F00` counter path was not exercised on hardware.
+- Result: Resets and `6F00` responses during an external run are now visible with no serial log. Flash traffic is unchanged: the record is RAM/POWMAN only.
+- Decision: Package from this commit and replace all open Windows requests with one campaign request.
+- Artifacts/logs: `artifacts/logs/cycle-choupi-20261127T075452Z.log`.
