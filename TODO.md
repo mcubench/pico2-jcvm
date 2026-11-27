@@ -41,12 +41,11 @@ several items. (4) Performance work waits for measurements.
      fill still selects the atomic path.
    - RV-51: **still defective**. The remote exception table recognizes
      UtilException, while local dispatch and native reason handling are missing.
-3. **HOST-01 Windows RSA-CRT-2048 `6F00` on `b4adbe13`.** This is the only open
-   functional failure from the v0.3-rc1 external run. Do option (a) from the
-   2026-11-26 non-reproduction record: an empty-card image with the
-   `b4adbe13` code on EE11, install jc32, then replay APDUs 1–7110 with serial
-   capture. Follow the long-run rules in AGENTS.md. If it still does not
-   reproduce, ask the tester for the serial log (option b).
+3. **HOST-01 Windows RSA-CRT-2048 `6F00` on `b4adbe13` (waiting on tester).**
+   Exact empty-card EE11 replay with jc32 completed APDUs 1–7110. The final
+   command returned `AA 9000` with no serial fault. See
+   `20261127-0751-rsacrt2048-exact-replay` and external request
+   WIN-RSACRT2048-B4ADBE13-20261127 for the Windows serial log and starting state.
 4. **RAM-pressure reclamation on EE11 (INV-15/16).** Use an empty normal
    max_crypto image with the full symmetric KAT, GP cleanup and flash
    telemetry. See `20261121-2154-ram-pressure-reclaim`. Release stability

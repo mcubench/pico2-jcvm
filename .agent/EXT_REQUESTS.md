@@ -118,6 +118,16 @@ Steps:
 Return each `results\<mode>_<timestamp>.zip`, `uninstall.txt`, the uninstall time and `--list` output, and any
 USB/PC/SC disconnects, resets or timeouts. Include the chip ID, reader name, and UF2 and JAR hashes.
 
+## WIN-RSACRT2048-B4ADBE13-20261127 — Windows RSA-CRT-2048 investigation
+
+Created 2026-11-27 07:51 CET. For the Windows run that produced `6F00` at
+APDU 7110, return the original serial log, chip ID and reader name. Describe
+the starting card state, including whether the archived empty-card UF2 was
+flashed immediately before installing jc32, what applets or runs preceded
+option 2/1, and any resets or power cycles. Use existing logs if available.
+The exact empty-card Linux replay returned `AA 9000` on EE11. See
+[the progress record](../progress.md) under `20261127-0751-rsacrt2048-exact-replay`.
+
 ## CRYPTO-XDH-ABI-20261121 — Java Card named-parameter XDH
 
 Created 2026-11-21 15:02 CET. Supply matching Java Card SDK API sources or

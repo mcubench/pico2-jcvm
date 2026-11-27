@@ -34485,3 +34485,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Exact archived normal max_crypto empty UF2 SHA-256 `9373ebfb15b8427c8b978268e85733f2f6e43de9b217bc1692ca06dee315ae23`. Reader `Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00`.
 - Decision: Continue the running HOST-01 command replay. Previous simulator and shortened physical runs did not preserve both the jc32 CAP and complete command prefix. The exact-prefix run stops at APDU 7110, a transport failure or 9000 seconds. APDU 7110 returning 6F00 reproduces the original symptom. Inspect serial for resource pressure, panic, FAULT and flash activity before moving to RAM-pressure verification.
 - Artifacts/logs: `artifacts/results/p0-rc1-ee11/{flash,install,replay,serial}.log`, `build/p0-arm-validation.log`.
+
+## 2026-11-27 Replay the full Windows RSA-CRT-2048 prefix on EE11
+
+- Step-Id: `20261127-0751-rsacrt2048-exact-replay`
+- Task: P0 HOST-01
+- When: '2026-11-27 06:30' - '2026-11-27 07:51'
+- Model: `gpt-6`
+- Change: Replayed the first 7,110 Windows commands after verified empty-card flash and pinned jc32 installation. This preserves the cumulative card workload absent from the previous shortened physical replay and tests on ARM after the simulator non-reproduction.
+- Validation: The replay exited 0 with 7,110 responses and no transport failure or 6F00. Serial had no FAULT, PANIC or NO_RESOURCE. CPLC and GETVERSION matched b4adbe13 and 1.8.6_jc32.
+- Result: APDU 7110 returned AA 9000 in 953 ms. The serial record for that command had 1770 files, 73311 bytes in use, 0 sync bytes and 1792 journal bytes. Exact UF2 SHA-256 9373ebfb15b8427c8b978268e85733f2f6e43de9b217bc1692ca06dee315ae23. Reader Pico 2 CHOUPI CCID [JCVM CCID] (EE116F37C7E4A04E) 00 00.
+- Decision: Non-reproduction on Linux. Request the Windows serial log and starting state while continuing independent P0 work.
+- Artifacts/logs: `artifacts/results/p0-rc1-ee11/{flash,install,replay,serial}.log`.
