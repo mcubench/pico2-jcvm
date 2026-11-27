@@ -81,6 +81,7 @@ public final class JCTransactionProbe extends Applet {
   private final byte[] shaInput = {0x61, 0x62, 0x63};
   private final byte[] shaDigest = new byte[32];
   private final byte[] transactionCapacityArray;
+  private short[] arrayLogicShortArray;
   private final byte[] transactionSmallArray = {0x11, 0x12};
   private final byte[] transactionOtherArray = {0x21, 0x22};
 
@@ -1621,6 +1622,32 @@ public final class JCTransactionProbe extends Applet {
           length += digest.doFinal(streamingInput, (short) 1, (short) 5120,
                                    buffer, length);
         }
+        break;
+      }
+      case (byte)128: {
+        arrayLogicShortArray = new short[2];
+        short[] destination = arrayLogicShortArray;
+        short[] pattern = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_RESET);
+        byte[] packed = JCSystem.makeTransientByteArray((short)2, JCSystem.CLEAR_ON_RESET);
+        pattern[0] = (short)0x1234;
+        ArrayLogic.arrayFillGeneric(destination, (short)0, (short)2, pattern, (short)0);
+        JCSystem.beginTransaction();
+        pattern[0] = (short)0x5678;
+        ArrayLogic.arrayFillGeneric(destination, (short)0, (short)2, pattern, (short)0);
+        short capacity = JCSystem.getUnusedCommitCapacity();
+        pattern[0] = (short)0xfedc;
+        packed[0] = (byte)0x89;
+        packed[1] = (byte)0xab;
+        short filled = ArrayLogic.arrayFillGenericNonAtomic(
+            destination, (short)0, (short)1, pattern, (short)0);
+        short copied = ArrayLogic.arrayCopyRepackNonAtomic(
+            packed, (short)0, (short)2, destination, (short)1);
+        boolean unchangedCapacity = JCSystem.getUnusedCommitCapacity() == capacity;
+        ArrayLogic.arrayFillGeneric(destination, (short)0, (short)2, pattern, (short)1);
+        JCSystem.abortTransaction();
+        buffer[0] = (byte)(filled == 1 && copied == 2 && unchangedCapacity &&
+                          destination[0] == (short)0xfedc &&
+                          destination[1] == (short)0x89ab ? 1 : 0);
         break;
       }
       case 127: {

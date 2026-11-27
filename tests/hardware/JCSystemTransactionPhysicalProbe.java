@@ -267,7 +267,9 @@ public final class JCSystemTransactionPhysicalProbe {
       expectByte(channel, 40, 0x01, "next APDU after ArrayLogic exceptions");
       expectByte(channel, 127, 0x01,
           "non-atomic ArrayLogic writes survive overlapping atomic rollback");
-      System.out.println("TEST:SUMMARY pass=21 fail=0");
+      expectByte(channel, 128, 0x01,
+          "non-atomic ArrayLogic short writes survive overlapping atomic rollback");
+      System.out.println("TEST:SUMMARY pass=22 fail=0");
     } finally {
       card.disconnect(false);
     }
