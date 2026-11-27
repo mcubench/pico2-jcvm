@@ -273,7 +273,9 @@ public final class JCSystemTransactionPhysicalProbe {
           "atomic ArrayLogic rejects over-capacity writes without mutation");
       expectByte(channel, 130, 0x01,
           "non-atomic ArrayLogic updates an oversized record without commit capacity");
-      System.out.println("TEST:SUMMARY pass=24 fail=0");
+      expectByte(channel, 132, 0x01,
+          "non-atomic ArrayLogic int writes survive overlapping atomic rollback");
+      System.out.println("TEST:SUMMARY pass=25 fail=0");
     } finally {
       card.disconnect(false);
     }

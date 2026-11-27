@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source_dir="${repo_root}/tests/fixtures/local/jcsystem_transaction_applet"
 build_dir="${repo_root}/build/jcsystem-transaction-probe"
 java8_home="${JAVA8_HOME:-${repo_root}/.local-toolchain/java8}"
+kit="$("${repo_root}/tools/fixture-path" toolchain.jc305)"
 
 [[ -x "${java8_home}/bin/java" ]] || {
   printf 'ERROR: Java 8 runtime not found: %s\n' "${java8_home}" >&2
@@ -14,38 +15,20 @@ mkdir -p "${build_dir}/classes" "${build_dir}/output"
 
 "${repo_root}/tools/env" "${java8_home}/bin/javac" \
   -source 1.7 -target 1.7 -Xlint:-options \
-  -classpath "$("${repo_root}/tools/fixture-path" toolchain.jc305)/lib/api_classic.jar" \
+  -classpath "${kit}/lib/api_classic.jar" \
   -d "${build_dir}/classes" "${source_dir}/JCTransactionProbe.java" \
   > "${build_dir}/compile.log" 2>&1
 
-cat > "${build_dir}/build.xml" <<EOF_ANT
-<?xml version="1.0" encoding="UTF-8"?>
-<project basedir="." default="build" name="JCTransactionProbe">
-  <property name="repo" location="${repo_root}"/>
-  <taskdef name="javacard" classname="pro.javacard.ant.JavaCard"
-           classpath="\${repo}/.local-toolchain/java-card/provided/ant-javacard.jar"/>
-  <target name="build">
-    <javacard jckit="\${repo}/.local-toolchain/java-card/provided/jc305u3_kit">
-      <cap output="\${basedir}/output/JCTransactionProbe.cap"
-           classes="\${basedir}/classes" aid="a0000000620301">
-        <applet class="algtest.JCTransactionProbe"
-                aid="a000000062030101"/>
-      </cap>
-    </javacard>
-  </target>
-</project>
-EOF_ANT
-
-mkdir -p "${build_dir}/home"
-cat > "${build_dir}/logging.properties" <<'EOF_LOGGING'
-handlers=java.util.logging.ConsoleHandler
-.level=OFF
-java.util.logging.ConsoleHandler.level=OFF
-EOF_LOGGING
-JAVA_HOME="${java8_home}" \
-JAVA_TOOL_OPTIONS="-Duser.home=${build_dir}/home -Djava.util.logging.config.file=${build_dir}/logging.properties" \
-  "${repo_root}/tools/env" ant -f "${build_dir}/build.xml" \
+# The persistent int-array probe needs the Oracle converter's -i option.
+"${repo_root}/tools/env" "${java8_home}/bin/java" -cp "${kit}/lib/tools.jar" \
+  com.sun.javacard.converter.Main -i \
+  -classdir "${build_dir}/classes" -exportpath "${kit}/api_export_files" \
+  -d "${build_dir}/output" -out CAP \
+  -applet 0xA0:0x00:0x00:0x00:0x62:0x03:0x01:0x01 algtest.JCTransactionProbe \
+  algtest 0xA0:0x00:0x00:0x00:0x62:0x03:0x01 1.0 \
   > "${build_dir}/build.log" 2>&1
+cp "${build_dir}/output/algtest/javacard/algtest.cap" \
+  "${build_dir}/output/JCTransactionProbe.cap"
 python3 - "${build_dir}/output/JCTransactionProbe.cap" \
   "${build_dir}/load-code.bin" <<'PY'
 import sys

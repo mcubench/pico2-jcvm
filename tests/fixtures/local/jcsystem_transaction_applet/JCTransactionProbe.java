@@ -82,6 +82,7 @@ public final class JCTransactionProbe extends Applet {
   private final byte[] shaDigest = new byte[32];
   private final byte[] transactionCapacityArray;
   private short[] arrayLogicShortArray;
+  private int[] arrayLogicIntArray;
   private final byte[] transactionSmallArray = {0x11, 0x12};
   private final byte[] transactionOtherArray = {0x21, 0x22};
 
@@ -1622,6 +1623,27 @@ public final class JCTransactionProbe extends Applet {
           length += digest.doFinal(streamingInput, (short) 1, (short) 5120,
                                    buffer, length);
         }
+        break;
+      }
+      case (byte)132: {
+        arrayLogicIntArray = new int[2];
+        int[] destination = arrayLogicIntArray;
+        int[] pattern = {0x12345678, 0x01234567, 0xfedcba98};
+        short[] packed = {(short)0x89ab, (short)0xcdef};
+        ArrayLogic.arrayFillGeneric(destination, (short)0, (short)2, pattern, (short)0);
+        JCSystem.beginTransaction();
+        ArrayLogic.arrayFillGeneric(destination, (short)0, (short)2, pattern, (short)1);
+        short capacity = JCSystem.getUnusedCommitCapacity();
+        short filled = ArrayLogic.arrayFillGenericNonAtomic(
+            destination, (short)0, (short)1, pattern, (short)2);
+        short copied = ArrayLogic.arrayCopyRepackNonAtomic(
+            packed, (short)0, (short)2, destination, (short)1);
+        boolean unchangedCapacity = JCSystem.getUnusedCommitCapacity() == capacity;
+        ArrayLogic.arrayFillGeneric(destination, (short)0, (short)2, pattern, (short)0);
+        JCSystem.abortTransaction();
+        buffer[0] = (byte)(filled == 1 && copied == 2 && unchangedCapacity &&
+                          destination[0] == 0xfedcba98 &&
+                          destination[1] == 0x89abcdef ? 1 : 0);
         break;
       }
       case (byte)131: {

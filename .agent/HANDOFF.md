@@ -8,10 +8,10 @@ Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
 - P0 HOST-01 exact v0.3-rc1 jc32 replay completed 7,110 APDUs. APDU 7110
   returned `AA 9000`; Windows serial and starting state are requested.
 - P0 RAM-pressure ran 208/208 checks. EE11 (`EE116F37C7E4A04E`, reader
-  suffix `00 00`) now runs the normal max_crypto build from `5f24421e`. The expanded transaction probe passed 24/24, including
-  ArrayLogic exception catches and persistent byte and short rollback, and atomic capacity rejection. Cleanup passed.
+  suffix `00 00`) now runs the normal max_crypto build from `5f24421e`. The expanded transaction probe passed 25/25, including
+  ArrayLogic exception catches and persistent byte, short and int rollback, and atomic capacity rejection. Cleanup passed.
   Oversized non-atomic updates survived a firmware reboot. Cleanup returned
-  EE11 to ISD-only. See progress `20261127-0849-arraylogic-reboot-readback`.
+  EE11 to ISD-only. See progress `20261127-0851-arraylogic-int-rollback`.
 
 ## Last observed physical state
 
