@@ -34811,3 +34811,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Source inspection only, at baseline `789aa994`. The key code paths of each high and medium finding were re-read. No build, VPCD or hardware run.
 - Result: Review document only. No firmware change and no flash traffic measured.
 - Artifacts/logs: `docs/review_claude_20261127.md`.
+
+## 2026-11-28 Independent JCVM review validation
+
+- Step-Id: `20261128-0854-jcvm-review-validation`
+- Task: Independently validate the 28 findings in the Claude JCVM execution review.
+- When: '2026-11-28 08:50' - '2026-11-28 08:54' CET
+- Model: `gpt-6`
+- Change: Added a source-referenced verdict, severity and fix assessment for each finding, plus missed issues and a prioritized list.
+- Validation: Inspected the source at `789aa994` and consulted the Oracle Java Card 3.0.5 API and JCRE specification. Checked that the report includes all 28 findings and that local links resolve. No build, simulator or hardware run.
+- Result: Static reference ownership, temporary JCRE references, empty-frame exception handling and `jsr` boundaries are the highest priorities. Corrected the original review's assumptions about GCM defaults, key modification and INSTALL transactions. No firmware change or flash measurement.
+- Artifacts/logs: `docs/review_claude_20261127_validation_codex.md`.
