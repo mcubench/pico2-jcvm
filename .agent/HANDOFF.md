@@ -10,6 +10,8 @@ Updated 2026-11-28. See [TODO.md](../TODO.md) for active work and
   trace check. VM and SELECT strings are present in its UF2 flash payload.
   Source, artifacts and package paths were inspected offline. No board state
   was checked or changed.
+  The [migration plan](../docs/diagnostics-migration-plan.md) and standing
+  AGENTS.md review checks are documented. Firmware implementation is pending.
 
 ## Current EE11 work
 

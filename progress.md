@@ -34846,3 +34846,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Confirmed INV-24 trace strings in the existing UF2, SHA-256 `8a85c1f107ab06335fd72a43c8b071c3ac6cb32911294ab611cfcda62a8af706`. Identified two CMake debug switches outside provenance and APDU telemetry that needs source inspection in addition to string scans.
 - Decision: Documentation-only step. Follow-up can use the checklist against the exact candidate release and account for measurement consumers.
 - Artifacts/logs: `docs/debugging_code_20261128.md`
+
+## 2026-11-28 Diagnostics migration and review guidance 2 min
+
+- Step-Id: `20261128-1021-diagnostics-migration-plan`
+- Task: Plan the development-code migration and document ongoing reviews for INV-24 and INV-27.
+- When: '2026-11-28 10:20' - '2026-11-28 10:22' CET
+- Model: `gpt-6`
+- Change: Added a proposed migration plan and a standing review section in AGENTS.md. The plan maps existing flags and producers to telemetry, profiling and test hooks, identifies evidence consumers, and specifies verification of the final UF2.
+- Validation: Checked the new local links and staged whitespace. No firmware build, runtime testing or hardware access.
+- Result: The implementation sequence and future review expectations are documented. Existing firmware and product invariants are unchanged. Treatment of the current evidence consumers remains a migration decision.
+- Artifacts/logs: `docs/diagnostics-migration-plan.md`, `AGENTS.md`
