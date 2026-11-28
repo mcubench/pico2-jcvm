@@ -53,7 +53,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 133),
+        "--case", type=int, action="append", choices=range(1, 147),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -289,7 +289,6 @@ def main() -> int:
                     (70, bytes((args.expect_register_reason,)), "Applet.register(AID) reports the expected install-time validation reason"),
                     (71, b"\x0b", "Applet.selectingApplet is true during select and process, false during deselect"),
                     (73, b"\x0b", "Applet.selectingApplet is false during deselect and resumes for the next selection"),
-                    (74, b"", "unknown AID SELECT deselects the applet and returns file not found"),
                     (75, b"\x01", "AID byte-array equality returns false for null and compares valid full and partial AIDs"),
                     (76, b"\x01", "JCSystem.getAID is null before register and isAppletActive is true after register during install"),
                     (77, b"\x0f", "JCSystem.isAppletActive is true during install/select/deselect/process callbacks"),
@@ -339,6 +338,25 @@ def main() -> int:
                 )
                 if args.case and 131 in args.case:
                     cases += ((131, b"\xff\xff", "read back oversized ArrayLogic writes"),)
+                if args.case:
+                    cases += (
+                        (74, b"", "unknown AID SELECT preserves the current applet"),
+                        (133, b"\x11", "abort restores an ordinary local array"),
+                        (134, b"\x01", "abort clears a local reference allocated in the transaction"),
+                        (135, b"\x03", "Util.arrayCompare rejects null and negative length"),
+                        (136, b"\x01", "JCSystem.isTransient(null) returns NOT_A_TRANSIENT_OBJECT"),
+                        (137, b"\x01", "APDU.receiveBytes before incoming state reports ILLEGAL_USE"),
+                        (138, b"", "short APDU outgoing length above 256 reports BAD_LENGTH"),
+                        (139, b"", "outgoing length above the no-chaining limit reports BAD_LENGTH"),
+                        (140, b"\x42", "completed APDU output survives a warning status"),
+                        (141, b"\x01\x02\x03\x04", "dense int switch uses 32-bit bounds"),
+                        (142, b"\x01", "select() throwing ISOException is reported as 6999"),
+                        (143, b"\x42", "GET RESPONSE with no VM pending data reaches the applet"),
+                        (144, b"\x03\x00\x00", "failed atomic Util.setShort closes its implicit transaction"),
+                        (145, b"\x00", "ECDSA accepts an initialized transient EC private key"),
+                        (146, bytes.fromhex("0105020304050606010203040506"),
+                         "HMAC length replacement reuses storage and rolls back key bytes"),
+                    )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
                     if args.case
@@ -471,21 +489,12 @@ def main() -> int:
                         continue
                     if p1 == 74:
                         unknown_select = bytes.fromhex("00A4040007F000000001234500")
-                        send_message(connection, unknown_select)
-                        unknown_response = receive_message(connection)
-                        if unknown_response != b"\x6a\x82":
-                            raise RuntimeError(
-                                f"{label}: expected 6A82, got {unknown_response.hex().upper()}"
-                            )
-                        print(f"TEST:APDU {label} response={unknown_response.hex().upper()}")
-                        send_message(connection, bytes((0x80, 0x00, 55, 0x00, 0x00)))
-                        inactive_response = receive_message(connection)
-                        if inactive_response != b"\x69\x99":
-                            raise RuntimeError(
-                                "APDU after unknown AID SELECT was dispatched: "
-                                f"{inactive_response.hex().upper()}"
-                            )
-                        exchange(connection, select, "reselect applet after unknown AID")
+                        read_callbacks = bytes((0x80, 0, 55, 0, 0))
+                        before = exchange(connection, read_callbacks, "read lifecycle counts")
+                        exchange(connection, unknown_select, label, b"\x6a\x82")
+                        after = exchange(connection, read_callbacks, "read counts after SELECT miss")
+                        if len(before) != 4 or after != before:
+                            raise RuntimeError(f"{label}: callback counts changed")
                         print(f"TEST:PASS {label}")
                         continue
                     if p1 == 71:
@@ -702,11 +711,18 @@ def main() -> int:
                             )
                         print(f"TEST:PASS {label}")
                         continue
-                    data = exchange(
-                        connection,
-                        bytes((0x80, 0x00, p1, 0x00, 0x00)),
-                        label,
-                    )
+                    command = bytes((0x80, 0x00, p1, 0x00, 0x00))
+                    status = b"\x90\x00"
+                    if p1 in (138, 139):
+                        status = b"\x62\x81"
+                    elif p1 == 140:
+                        status = b"\x62\x83"
+                    elif p1 == 143:
+                        command = bytes.fromhex("00C0000001")
+                    data = exchange(connection, command, label, status)
+                    if p1 == 142:
+                        exchange(connection, select, "selection callback throws", b"\x69\x99")
+                        exchange(connection, select, "successful selection after rejection")
                     if p1 == 10:
                         if len(data) != 24 or data[:22] != (
                             bytes(18) + bytes.fromhex("7FFF7FFF")

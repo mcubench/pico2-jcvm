@@ -22,6 +22,8 @@ import javacard.security.MessageDigest;
 import javacard.security.InitializedMessageDigest;
 import javacard.security.CryptoException;
 import javacard.security.AESKey;
+import javacard.security.ECPrivateKey;
+import javacard.security.HMACKey;
 import javacard.security.KeyBuilder;
 import javacard.security.RandomData;
 import javacard.security.Signature;
@@ -65,6 +67,7 @@ public final class JCTransactionProbe extends Applet {
   private byte selectingAppletProbeFlags;
   private byte selectDeselectTransientResult;
   private byte rejectNextSelect;
+  private HMACKey replacementProbeKey;
   private byte beginTransactionOnNextSelect;
   private byte beginTransactionOnNextDeselect;
   private byte currentApduHiddenOutsideProcess;
@@ -175,6 +178,10 @@ public final class JCTransactionProbe extends Applet {
     } catch (SecurityException expected) {
       currentApduBufferHiddenOutsideProcess = 1;
     }
+    if (rejectNextSelect == 2) {
+      rejectNextSelect = 0;
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    }
     boolean rejectSelection = rejectNextSelect != 0;
     if (rejectSelection) rejectNextSelect = 0;
     if (beginTransactionOnNextSelect != 0) {
@@ -224,6 +231,55 @@ public final class JCTransactionProbe extends Applet {
     return (short)(countFrames((short)(remaining - 1)) + 1);
   }
 
+  private static byte denseIntSwitch(int key) {
+    switch (key) {
+      case 65536: return 1;
+      case 65537: return 2;
+      case 65538: return 3;
+      default: return 4;
+    }
+  }
+
+  // The 3.0.5 converter crashes (InstrContainer.reset) on this int local inside process().
+  private static short denseIntSwitchProbe(byte[] buffer) {
+    int base = 65536 + buffer[ISO7816.OFFSET_P2];
+    try {
+      for (short index = 0; index < 4; index++) {
+        buffer[index] = denseIntSwitch(base + index);
+      }
+    } catch (RuntimeException unexpected) {
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    }
+    return 4;
+  }
+
+  // Returns 0 when ECDSA accepts a fully initialized transient P-256 private key.
+  private static byte transientEcdsaInitReason() {
+    byte[] p = {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
+    byte[] a = {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xfc};
+    byte[] b = {(byte)0x5a,(byte)0xc6,0x35,(byte)0xd8,(byte)0xaa,0x3a,(byte)0x93,(byte)0xe7,(byte)0xb3,(byte)0xeb,(byte)0xbd,0x55,0x76,(byte)0x98,(byte)0x86,(byte)0xbc,0x65,0x1d,0x06,(byte)0xb0,(byte)0xcc,0x53,(byte)0xb0,(byte)0xf6,0x3b,(byte)0xce,0x3c,0x3e,0x27,(byte)0xd2,0x60,0x4b};
+    byte[] g = {4,0x6b,0x17,(byte)0xd1,(byte)0xf2,(byte)0xe1,0x2c,0x42,0x47,(byte)0xf8,(byte)0xbc,(byte)0xe6,(byte)0xe5,0x63,(byte)0xa4,0x40,(byte)0xf2,0x77,0x03,0x7d,(byte)0x81,0x2d,(byte)0xeb,0x33,(byte)0xa0,(byte)0xf4,(byte)0xa1,0x39,0x45,(byte)0xd8,(byte)0x98,(byte)0xc2,(byte)0x96,0x4f,(byte)0xe3,0x42,(byte)0xe2,(byte)0xfe,0x1a,0x7f,(byte)0x9b,(byte)0x8e,(byte)0xe7,(byte)0xeb,0x4a,0x7c,0x0f,(byte)0x9e,0x16,0x2b,(byte)0xce,0x33,0x57,0x6b,0x31,0x5e,(byte)0xce,(byte)0xcb,(byte)0xb6,0x40,0x68,0x37,(byte)0xbf,0x51,(byte)0xf5};
+    byte[] n = {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,0,0,0,0,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xbc,(byte)0xe6,(byte)0xfa,(byte)0xad,(byte)0xa7,0x17,(byte)0x9e,(byte)0x84,(byte)0xf3,(byte)0xb9,(byte)0xca,(byte)0xc2,(byte)0xfc,0x63,0x25,0x51};
+    ECPrivateKey key = (ECPrivateKey)KeyBuilder.buildKey(
+        KeyBuilder.TYPE_EC_FP_PRIVATE_TRANSIENT_RESET,
+        KeyBuilder.LENGTH_EC_FP_256, false);
+    key.setFieldFP(p, (short)0, (short)p.length);
+    key.setA(a, (short)0, (short)a.length);
+    key.setB(b, (short)0, (short)b.length);
+    key.setG(g, (short)0, (short)g.length);
+    key.setR(n, (short)0, (short)n.length);
+    key.setK((short)1);
+    key.setS(g, (short)1, (short)1);
+    if (!key.isInitialized()) return (byte)0x7f;
+    Signature signature = Signature.getInstance(Signature.ALG_ECDSA_SHA_256, false);
+    try {
+      signature.init(key, Signature.MODE_SIGN);
+    } catch (CryptoException expected) {
+      return (byte)expected.getReason();
+    }
+    return 0;
+  }
+
   public void process(APDU apdu) throws ISOException {
     if (selectingApplet()) {
       if (oneShotSelectProbe == 1) {
@@ -240,6 +296,19 @@ public final class JCTransactionProbe extends Applet {
       return;
     }
     byte[] buffer = apdu.getBuffer();
+    if (buffer[ISO7816.OFFSET_CLA] == 0) {
+      switch (buffer[ISO7816.OFFSET_INS]) {
+        case (byte)0xa4:
+          ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
+          return;
+        case (byte)0xc0:
+          buffer[0] = 0x42;
+          apdu.setOutgoingAndSend((short)0, (short)1);
+          return;
+        default:
+          break;
+      }
+    }
     byte command = buffer[ISO7816.OFFSET_P1];
     short length = 1;
     boolean manualResponse = false;
@@ -1847,6 +1916,121 @@ public final class JCTransactionProbe extends Applet {
         memoryProbe = null;
         JCSystem.requestObjectDeletion();
         length = appendHeapFree(buffer, (short)0);
+        break;
+      }
+      case (byte)133: {
+        byte[] local = new byte[1];
+        local[0] = 0x11;
+        JCSystem.beginTransaction();
+        local[0] = 0x22;
+        JCSystem.abortTransaction();
+        buffer[0] = local[0];
+        break;
+      }
+      case (byte)134: {
+        JCSystem.beginTransaction();
+        byte[] local = new byte[1];
+        JCSystem.abortTransaction();
+        buffer[0] = local == null ? (byte)1 : (byte)0;
+        break;
+      }
+      case (byte)135: {
+        byte rejected = 0;
+        try {
+          Util.arrayCompare(null, (short)0, buffer, (short)0, (short)0);
+        } catch (NullPointerException expected) {
+          rejected |= 1;
+        }
+        try {
+          Util.arrayCompare(buffer, (short)0, buffer, (short)0, (short)-1);
+        } catch (ArrayIndexOutOfBoundsException expected) {
+          rejected |= 2;
+        }
+        buffer[0] = rejected;
+        break;
+      }
+      case (byte)136:
+        buffer[0] = 0;
+        try {
+          if (JCSystem.isTransient(null) == JCSystem.NOT_A_TRANSIENT_OBJECT) {
+            buffer[0] = 1;
+          }
+        } catch (NullPointerException unexpected) {
+          buffer[0] = 2;
+        }
+        break;
+      case (byte)137:
+        buffer[0] = 0;
+        try {
+          apdu.receiveBytes((short)ISO7816.OFFSET_CDATA);
+        } catch (APDUException expected) {
+          buffer[0] = (byte)expected.getReason();
+        }
+        break;
+      case (byte)138:
+      case (byte)139: {
+        // Return the result as a status because setOutgoing has already run.
+        short rejected = 0;
+        if (command == (byte)138) {
+          apdu.setOutgoing();
+        } else {
+          apdu.setOutgoingNoChaining();
+        }
+        try {
+          apdu.setOutgoingLength((short)(command == (byte)138 ? 257 : 253));
+        } catch (APDUException expected) {
+          rejected = expected.getReason();
+        }
+        ISOException.throwIt(rejected == APDUException.BAD_LENGTH ?
+            (short)0x6281 : (short)(0x6f10 | rejected));
+        return;
+      }
+      case (byte)140:
+        buffer[0] = 0x42;
+        apdu.setOutgoingAndSend((short)0, (short)1);
+        ISOException.throwIt((short)0x6283);
+        return;
+      case (byte)141:
+        length = denseIntSwitchProbe(buffer);
+        break;
+      case (byte)142:
+        rejectNextSelect = 2;
+        buffer[0] = 1;
+        break;
+      case (byte)144: {
+        short reason = 0;
+        try {
+          Util.setShort(transactionCapacityArray, (short)0, (short)0x1234);
+        } catch (TransactionException expected) {
+          reason = expected.getReason();
+        }
+        byte depth = JCSystem.getTransactionDepth();
+        if (depth != 0) JCSystem.abortTransaction();
+        buffer[0] = (byte)reason;
+        buffer[1] = depth;
+        buffer[2] = transactionCapacityArray[0];
+        length = 3;
+        break;
+      }
+      case (byte)145:
+        buffer[0] = transientEcdsaInitReason();
+        break;
+      case (byte)146: {
+        replacementProbeKey = (HMACKey)KeyBuilder.buildKey(
+            KeyBuilder.TYPE_HMAC, KeyBuilder.LENGTH_HMAC_SHA_256_BLOCK_64, false);
+        final byte[] material = {1, 2, 3, 4, 5, 6};
+        replacementProbeKey.setKey(material, (short)0, (short)6);
+        JCSystem.beginTransaction();
+        replacementProbeKey.setKey(material, (short)0, (short)4);
+        short capacity = JCSystem.getUnusedCommitCapacity();
+        replacementProbeKey.setKey(material, (short)1, (short)5);
+        buffer[0] = (byte)(capacity == JCSystem.getUnusedCommitCapacity() ? 1 : 0);
+        buffer[1] = replacementProbeKey.getKey(buffer, (short)2);
+        JCSystem.abortTransaction();
+        buffer[7] = replacementProbeKey.getKey(buffer, (short)8);
+        replacementProbeKey.clearKey();
+        replacementProbeKey = null;
+        length = 14;
         break;
       }
       case 56: {

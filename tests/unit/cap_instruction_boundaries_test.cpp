@@ -6,11 +6,15 @@
 
 int main() {
   bool passed = true;
-  unsigned int count = 0;
-  const auto check = [&passed, &count](bool condition, const char *name) {
-    ++count;
+  unsigned int pass_count = 0;
+  unsigned int fail_count = 0;
+  const auto check = [&pass_count, &fail_count](bool condition, const char *name) {
+    if (condition) {
+      ++pass_count;
+    } else {
+      ++fail_count;
+    }
     std::printf("TEST:%s %s\n", condition ? "PASS" : "FAIL", name);
-    passed = passed && condition;
   };
 
   const uint8_t short_branch[] = {0x70, 0x02, 0x00};
@@ -39,6 +43,24 @@ int main() {
   check(!jcvm::cap_instruction_boundaries::validate_control_flow(
             wide_branch_into_operand, sizeof(wide_branch_into_operand)),
         "wide branch into push operand is rejected");
+
+  // jsr +4; return; astore_0; ret 0
+  const uint8_t forward_jsr[] = {0x71, 0x00, 0x04, 0x7a, 0x2b, 0x72, 0x00};
+  check(jcvm::cap_instruction_boundaries::validate_control_flow(
+            forward_jsr, sizeof(forward_jsr)),
+        "forward jsr accepts a signed 16-bit displacement");
+  std::size_t jsr_width = 0;
+  check(jcvm::cap_instruction_boundaries::instruction_width(
+            forward_jsr, sizeof(forward_jsr), 0, jsr_width) &&
+            jsr_width == 3,
+        "instruction after jsr starts three bytes later");
+
+  // goto +5; astore_0; ret 0; jsr -3; return
+  const uint8_t backward_jsr[] = {
+      0x70, 0x05, 0x2b, 0x72, 0x00, 0x71, 0xff, 0xfd, 0x7a};
+  check(jcvm::cap_instruction_boundaries::validate_control_flow(
+            backward_jsr, sizeof(backward_jsr)),
+        "backward jsr accepts a signed 16-bit displacement");
 
   const uint8_t valid_stableswitch[] = {
       0x73, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x7a};
@@ -109,7 +131,6 @@ int main() {
   std::printf("FUZZ:SUMMARY inputs=%zu max_bytes=%zu\n", fuzz_inputs,
               fuzz_size);
 
-  std::printf("TEST:SUMMARY pass=%u fail=%u\n", passed ? count : count - 1,
-              passed ? 0 : 1);
-  return passed ? 0 : 1;
+  std::printf("TEST:SUMMARY pass=%u fail=%u\n", pass_count, fail_count);
+  return fail_count == 0 ? 0 : 1;
 }

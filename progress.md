@@ -34822,3 +34822,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: Inspected the source at `789aa994` and consulted the Oracle Java Card 3.0.5 API and JCRE specification. Checked that the report includes all 28 findings and that local links resolve. No build, simulator or hardware run.
 - Result: Static reference ownership, temporary JCRE references, empty-frame exception handling and `jsr` boundaries are the highest priorities. Corrected the original review's assumptions about GCM defaults, key modification and INSTALL transactions. No firmware change or flash measurement.
 - Artifacts/logs: `docs/review_claude_20261127_validation_codex.md`.
+
+## 2026-11-28 Red regressions for the JCVM review findings 8 min
+
+- Step-Id: `20261128-0921-review-red-regressions`
+- Task: Findings #5, #6, #7, #14, #15, #16, #18, #22, #23, #24, #26 and missed items A and D of `docs/review_claude_20261127.md` / its Codex validation
+- When: '2026-11-28 09:14' - '2026-11-28 09:20' (this session). The earlier uncommitted work by `gpt-6` began after 08:54; its end time was not recorded.
+- Model: `claude-opus-5-5` (finishing uncommitted work by `gpt-6`)
+- Change: Probe applet cases 133–146 and a reworked case 74 test the open findings; they run only with `--case`. `tools/test-review-regressions` runs each one alone and reports XFAIL, or XPASS once a fix lands (then move the case into the default list). Fixes made to the inherited work: the 3.0.5 converter crashed (`InstrContainer.reset`) on case 141's `int` local inside `process()`, so the 32-bit switch probe moved to a helper. Case 145 set no EC domain, so a fixed VM would still fail; it now sets P-256 parameters. A persistent-key control returned PASS, which isolates the transient-type check. The unit test adds forward/backward `jsr` checks (#6) and now counts every failure (it used to report at most one). `tools/test-no-debug-traces` is ARM-only (RISC-V out of scope), reads `mode=normal` from provenance and covers exception, VM progress and SELECT traces (#18, A).
+- Validation: `tools/test-review-regressions`: 15/15 XFAIL, 0 XPASS, each failing for its finding's reason. Default `jcsystem_transaction_applet_test.py` run (no `--case`): rc 0, 122 TEST:PASS. `tools/test-cap-instruction-boundaries`: 14 pass, 2 fail (both jsr, #6). `tools/test-no-debug-traces` on the current normal ARM ELF: FAIL listing EXCEPTION_*, ATHROW and SELECT* strings.
+- Result: Tests only. No firmware change, no hardware run, no flash traffic measured. Case 146 checks key reuse through unchanged commit capacity, which is a proxy; its rollback bytes already pass. Not covered: #1, #2, #3, #4, #8–#13, #17, #19–#21, #25, #27, #28, B, C.
+- Decision: Fix the findings in priority order; each fix flips its case to XPASS. Until #6 and #18 are fixed, the unit and trace checks stay red on purpose.
+- Artifacts/logs: `build/review-regressions/`, `build/review-regressions-default-host.log`.
