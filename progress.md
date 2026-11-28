@@ -34800,3 +34800,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Validation: PICO2_VPCD_PERSISTENCE_GC_ROUNDS=0 ./tools/test-vpcd-persistence passed. The update returned 019000, restore returned FFFF9000, and the restore phase passed 11 checks. Git diff whitespace passed.
 - Result: Repeatable host process-restart coverage supplements the EE11 firmware reboot evidence. Physical USB power removal and interruption remain open. This test-only step measured no physical flash traffic.
 - Artifacts/logs: `build/p1-arraylogic-vpcd-restart.log`.
+
+## 2026-11-27 JCVM execution review (Claude)
+
+- Step-Id: `20261128-0850-jcvm-execution-review`
+- Task: Source review of JCVM execution against the JC 3.0.5 VM, JCRE and API specs, and for security (INV-07, INV-13, INV-14, INV-16, INV-18 to INV-22, INV-24)
+- When: '2026-11-27 22:16' - '2026-11-27 22:48', '2026-11-28 08:40' - '2026-11-28 08:50'
+- Model: `claude-opus-5-5`
+- Change: Added `docs/review_claude_20261127.md`, which records 28 findings with file:line references, the violated spec section or invariant, a trigger, and confirmed/plausible status. It excludes the three items already in `docs/review_20261127.md`. Top items: objects held in statics are reachable across contexts (INV-19); the APDU buffer and bArray are not global arrays and can be stored and persisted (INV-13, INV-19); package-private ROM methods can be called and overridden (INV-18); an unbounded `jsr` list can exhaust RAM and panic (INV-22); `itableswitch` uses 16-bit bounds; backward `jsr` fails and the boundary decoder gives `jsr` width 2; abort does not roll back RAM-resident objects (INV-14); and normal ARM builds contain exception trace strings (INV-24).
+- Validation: Source inspection only, at baseline `789aa994`. The key code paths of each high and medium finding were re-read. No build, VPCD or hardware run.
+- Result: Review document only. No firmware change and no flash traffic measured.
+- Artifacts/logs: `docs/review_claude_20261127.md`.
