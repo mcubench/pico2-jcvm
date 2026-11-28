@@ -903,7 +903,7 @@ void Bytecodes::bc_goto() {
  *   variable. This asymmetry is intentional.
  */
 void Bytecodes::bc_jsr() {
-  uint16_t branch;
+  jshort_t branch;
   Stack &stack = this->context.getStack();
   jreturnaddress_t ret_addr;
   pc_t &pc = stack.getPC();
@@ -912,9 +912,8 @@ void Bytecodes::bc_jsr() {
 
   TRACE_JCVM_DEBUG("JSR 0x%04X", branch);
 
-  // NOTE: -2 because of the branch offset value and -1 due to getNextByte
-  // function increases the PC after reading.
-  update_branch(this->context, pc, branch - 3);
+  update_branch(this->context, pc,
+                branch_offset::after_operand(branch, sizeof(branch)));
 
   ret_addr = stack.savePC();
   stack.push_ReturnAddress(ret_addr);
@@ -1156,9 +1155,9 @@ void Bytecodes::bc_itableswitch() {
 
   default_value = pc.getNextShort();
 
-  low_value = pc.getNextShort();
+  low_value = pc.getNextInt();
 
-  high_value = pc.getNextShort();
+  high_value = pc.getNextInt();
 
 #ifdef JCRE_SWITCH_PROTECTION
   nb_offsets = static_cast<int64_t>(high_value) - low_value + 1;

@@ -87,6 +87,62 @@ public final class JCSystemTransactionPhysicalProbe {
     System.out.println("TEST:PASS " + description);
   }
 
+  /** Send a raw APDU and require the exact response data and status word. */
+  private static void expectRaw(CardChannel channel, String command,
+                                String expected, String description)
+      throws Exception {
+    ResponseAPDU response = channel.transmit(new CommandAPDU(unhex(command)));
+    String actual = hex(response.getBytes());
+    System.out.printf("APDU:%s command=%s response=%s%n", description, command,
+        actual);
+    if (!actual.equals(expected)) {
+      throw new IllegalStateException(description + ": expected=" + expected +
+          " got=" + actual);
+    }
+    System.out.println("TEST:PASS " + description);
+  }
+
+  private static byte[] unhex(String text) {
+    byte[] bytes = new byte[text.length() / 2];
+    for (int i = 0; i < bytes.length; i++) {
+      bytes[i] = (byte)Integer.parseInt(text.substring(2 * i, 2 * i + 2), 16);
+    }
+    return bytes;
+  }
+
+  /** Cases for docs/review_claude_20261127.md findings. */
+  private static void reviewFindingCases(CardChannel channel) throws Exception {
+    String counts = hex(probe(channel, 55));
+    expectRaw(channel, "00A4040007F000000001234500", "6A82",
+        "unknown AID SELECT returns 6A82");
+    if (!hex(probe(channel, 55)).equals(counts)) {
+      throw new IllegalStateException("unknown AID SELECT changed the selection");
+    }
+    System.out.println("TEST:PASS unknown AID SELECT preserves the current applet");
+    String[][] cases = {
+        {"8000850000", "119000", "abort restores an ordinary local array"},
+        {"8000860000", "019000", "abort clears a reference allocated in the transaction"},
+        {"8000870000", "039000", "Util.arrayCompare rejects null and negative length"},
+        {"8000880000", "019000", "JCSystem.isTransient(null) is NOT_A_TRANSIENT_OBJECT"},
+        {"8000890000", "019000", "receiveBytes before incoming state is ILLEGAL_USE"},
+        {"80008A0000", "6281", "short outgoing length above 256 is BAD_LENGTH"},
+        {"80008B0000", "6281", "no-chaining outgoing length above 252 is BAD_LENGTH"},
+        {"80008C0000", "426283", "completed output survives a warning status"},
+        {"80008D0000", "010203049000", "dense int switch uses 32-bit bounds"},
+        {"00C0000001", "429000", "GET RESPONSE without pending data reaches the applet"},
+        {"8000900000", "0300009000", "failed atomic Util.setShort closes its transaction"},
+        {"8000910000", "009000", "ECDSA accepts a transient EC private key"},
+        {"8000920000", "01050203040506060102030405069000",
+            "HMAC length change reuses storage and rolls back"},
+    };
+    for (String[] entry : cases) expectRaw(channel, entry[0], entry[1], entry[2]);
+    expectRaw(channel, "80008E0000", "019000", "arm select() rejection");
+    expectRaw(channel, "00A4040008" + hex(APPLET_AID), "6999",
+        "select() throwing ISOException fails with 6999");
+    exchange(channel, "SELECT_AFTER_REJECTED_SELECT",
+        new CommandAPDU(0x00, 0xA4, 0x04, 0x00, APPLET_AID, 256));
+  }
+
   private static void expectTransactionArrayLength(CardChannel channel,
                                                   String description)
       throws Exception {
@@ -275,7 +331,8 @@ public final class JCSystemTransactionPhysicalProbe {
           "non-atomic ArrayLogic updates an oversized record without commit capacity");
       expectByte(channel, 132, 0x01,
           "non-atomic ArrayLogic int writes survive overlapping atomic rollback");
-      System.out.println("TEST:SUMMARY pass=25 fail=0");
+      reviewFindingCases(channel);
+      System.out.println("TEST:SUMMARY pass=42 fail=0");
     } finally {
       card.disconnect(false);
     }

@@ -7,6 +7,7 @@
 #include "jc_types/jc_instance.hpp"
 #include "native_crypto_exception.hpp"
 #include "native_pqc.hpp"
+#include "native_secret_key.hpp"
 #include "native_signature_digest.hpp"
 
 #include "mbedtls/sha1.h"
@@ -951,7 +952,7 @@ std::vector<unsigned char> runMac(
                                   static_cast<uint16_t>(inputLength);
   if (combinedLength > 32767)
     throw Exceptions::ArrayIndexOutOfBoundsException;
-  std::vector<unsigned char> keyBytes(key->size());
+  std::vector<unsigned char> keyBytes(nativeKeyDataLength(*keyObject, *key));
   const bool hmac = algorithm >= 24 && algorithm <= 29;
   const bool aes = algorithm == 18 || algorithm == 49;
   const size_t blockSize = hmac ? 0 : (aes ? 16 : 8);
@@ -964,7 +965,7 @@ std::vector<unsigned char> runMac(
     ivBytes[i] = static_cast<uint8_t>(initialVector->getByteEntry(
         static_cast<uint16_t>(i)));
   std::vector<unsigned char> input(combinedLength);
-  for (uint16_t i = 0; i < key->size(); ++i)
+  for (uint16_t i = 0; i < keyBytes.size(); ++i)
     keyBytes[i] = static_cast<uint8_t>(key->getByteEntry(i));
   for (jshort_t i = 0; i < bufferedLength; ++i)
     input[static_cast<size_t>(i)] = static_cast<uint8_t>(

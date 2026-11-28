@@ -60,14 +60,14 @@ inline bool instruction_width(const uint8_t *code, const std::size_t size,
       (opcode >= 0x15 && opcode <= 0x17) ||
       (opcode >= 0x28 && opcode <= 0x2a) || opcode == 0x3f ||
       opcode == 0x40 || opcode == 0x59 || opcode == 0x5a ||
-      (opcode >= 0x60 && opcode <= 0x72) || opcode == 0x90 ||
+      (opcode >= 0x60 && opcode <= 0x70) || opcode == 0x72 || opcode == 0x90 ||
       (opcode >= 0xad && opcode <= 0xb0) ||
       (opcode >= 0xb5 && opcode <= 0xb8)) {
     width = (opcode == 0x59 || opcode == 0x5a) ? 3 : 2;
     return has_bytes(size, offset, width);
   }
 
-  if (opcode == 0x11 || opcode == 0x13 ||
+  if (opcode == 0x11 || opcode == 0x13 || opcode == 0x71 ||
       (opcode >= 0x7b && opcode <= 0x8d) || opcode == 0x8f ||
       opcode == 0x91 || (opcode >= 0xa9 && opcode <= 0xac) ||
       (opcode >= 0xb1 && opcode <= 0xb4)) {
@@ -213,7 +213,8 @@ inline bool validate_control_flow(const uint8_t *code,
     const uint8_t opcode = code[offset];
     if ((opcode >= 0x60 && opcode <= 0x71) ||
         (opcode >= 0x98 && opcode <= 0xa8)) {
-      const int64_t displacement = opcode <= 0x71
+      // jsr (0x71) carries a signed 16-bit displacement.
+      const int64_t displacement = opcode <= 0x70
           ? static_cast<int8_t>(code[offset + 1])
           : read_s16(code, offset + 1);
       if (!check_target(code, size, offset, displacement)) return false;

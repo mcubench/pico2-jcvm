@@ -687,6 +687,7 @@ void process_message(uint8_t rhport) {
     }
     uint8_t response[kMaxApduResponse] = {0x6d, 0x00}; // instruction not supported
     size_t response_length = 2;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
       std::printf("CHOUPI:SELECT_RX len=%u bytes=",
                   static_cast<unsigned>(apdu_length));
@@ -696,6 +697,20 @@ void process_message(uint8_t rhport) {
       }
       std::printf("\r\n");
       std::fflush(stdout);
+    }
+#endif
+    // ISO 7816-4: a SELECT for an AID that is not installed fails with 6A82
+    // and leaves the current selection unchanged.
+    bool select_target_known = false;
+    if (route == pico2_jcvm::CcidApduRoute::SelectApplet && apdu_length >= 5 &&
+        apdu[4] >= 5 && apdu[4] <= 16 && apdu_length >= 5u + apdu[4]) {
+      uint8_t found_package = 0xff;
+      uint8_t found_applet_aid[16]{};
+      uint8_t found_applet_aid_length = 0;
+      uint16_t found_class_index = 0xffff;
+      select_target_known = cap_store_find_instance(
+          apdu + 5, apdu[4], found_package, found_applet_aid,
+          found_applet_aid_length, found_class_index);
     }
     if (apdu_length >= 2 && apdu[0] == 0x00 && apdu[1] == 0xa4) {
       const uint8_t instance_aid_length =
@@ -708,7 +723,7 @@ void process_message(uint8_t rhport) {
                       instance_aid_length) == 0;
       const bool selecting_isd =
           route == pico2_jcvm::CcidApduRoute::SelectIsd;
-      if (is_select_by_aid(apdu, apdu_length) || selecting_isd) {
+      if (select_target_known || selecting_isd) {
         // GP: deselecting the ISD (or reselecting it) ends its secure channel
         // session; PC/SC reconnects without a power cycle must not inherit it.
         secure_channel.reset();
@@ -1058,7 +1073,12 @@ void process_message(uint8_t rhport) {
       send_response(rhport, 0x80, response, response_length);
       break;
     }
-    if (route == pico2_jcvm::CcidApduRoute::SelectApplet) {
+    if (route == pico2_jcvm::CcidApduRoute::SelectApplet &&
+        !select_target_known) {
+      response[0] = 0x6a;
+      response[1] = 0x82;
+      response_length = 2;
+    } else if (route == pico2_jcvm::CcidApduRoute::SelectApplet) {
       (void)cap_load_session.restoreInstalledForAid(apdu + 5, apdu[4]);
       const uint8_t installed_aid_length =
           cap_load_session.instanceAidLength();
@@ -1066,6 +1086,7 @@ void process_message(uint8_t rhport) {
           cap_load_session.installed() && apdu[4] == installed_aid_length &&
           std::memcmp(apdu + 5, cap_load_session.instanceAid(),
                       installed_aid_length) == 0;
+#ifdef CHOUPI_DEBUG_CCID_APPLET
       std::printf("CHOUPI:SELECT_APDU len=%u lc=%u installed=%u aid_len=%u match=%u\r\n",
                   static_cast<unsigned>(apdu_length),
                   static_cast<unsigned>(apdu[4]),
@@ -1073,6 +1094,7 @@ void process_message(uint8_t rhport) {
                   static_cast<unsigned>(installed_aid_length),
                   select_instance_command ? 1u : 0u);
       std::fflush(stdout);
+#endif
       if (select_instance_command) {
         uint8_t package_id = 0;
         uint16_t install_method_offset = 0;
@@ -1080,11 +1102,13 @@ void process_message(uint8_t rhport) {
             cap_load_session.instanceAid(),
             cap_load_session.instanceAidLength(), &package_id,
             &install_method_offset);
+#ifdef CHOUPI_DEBUG_CCID_APPLET
         std::printf("CHOUPI:SELECT lookup=%u package=%u install=%04X\r\n",
                     static_cast<unsigned>(lookup_status),
                     static_cast<unsigned>(package_id),
                     static_cast<unsigned>(install_method_offset));
         std::fflush(stdout);
+#endif
         if (lookup_status != 0 ||
             !choupi_vm_is_dynamic_package(package_id)) {
           response[0] = 0x6a;
@@ -1094,18 +1118,22 @@ void process_message(uint8_t rhport) {
           uint16_t applet_class_index = 0xffff;
           const bool has_applet_class =
               cap_load_session.appletClassIndex(applet_class_index);
+#ifdef CHOUPI_DEBUG_CCID_APPLET
           std::printf("CHOUPI:SELECT class_found=%u class=%04X\r\n",
                       has_applet_class ? 1u : 0u,
                       static_cast<unsigned>(applet_class_index));
           std::fflush(stdout);
+#endif
         bool select_failed = false;
           if (has_applet_class) {
             const uint8_t restore_status = choupi_vm_restore_applet(
                 package_id, applet_class_index, cap_load_session.instanceAid(),
                 cap_load_session.instanceAidLength());
+#ifdef CHOUPI_DEBUG_CCID_APPLET
             std::printf("CHOUPI:SELECT restore=%u\r\n",
                         static_cast<unsigned>(restore_status));
             std::fflush(stdout);
+#endif
             if (restore_status != 0) {
               response[0] = restore_status == 2 ? 0x6a : 0x6f;
               response[1] = restore_status == 2 ? 0x84 : 0x00;
@@ -1115,9 +1143,11 @@ void process_message(uint8_t rhport) {
           }
         if (!select_failed && applet_class_index != 0xffff) {
             const uint16_t select_status = choupi_vm_select_applet();
+#ifdef CHOUPI_DEBUG_CCID_APPLET
             std::printf("CHOUPI:SELECT select=%04X\r\n",
                         static_cast<unsigned>(select_status));
             std::fflush(stdout);
+#endif
             if (select_status != 0x9000) {
               response[0] = static_cast<uint8_t>(select_status >> 8);
               response[1] = static_cast<uint8_t>(select_status);
@@ -1131,8 +1161,10 @@ void process_message(uint8_t rhport) {
             // command. Flash once per incoming applet APDU, not for reader
             // polling or card-manager traffic.
             choupi_reader_led_activity();
+#ifdef CHOUPI_DEBUG_CCID_APPLET
             std::printf("CHOUPI:SELECT process=begin\r\n");
             std::fflush(stdout);
+#endif
             uint16_t process_status = 0xffff;
             {
               NativeOperationScope operation(
@@ -1143,10 +1175,12 @@ void process_message(uint8_t rhport) {
                   static_cast<uint16_t>(sizeof(response)),
                   &applet_response_length);
             }
+#ifdef CHOUPI_DEBUG_CCID_APPLET
             std::printf("CHOUPI:SELECT process=end sw=%04X len=%u\r\n",
                         static_cast<unsigned>(process_status),
                         static_cast<unsigned>(applet_response_length));
             std::fflush(stdout);
+#endif
             if (process_status == 0xffff || applet_response_length < 2 ||
                 applet_response_length > sizeof(response)) {
               response[0] = 0x6f;

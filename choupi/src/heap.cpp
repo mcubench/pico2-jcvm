@@ -1087,6 +1087,32 @@ void Heap::clearTransientArrays(const ClearEvent event) {
   }
 }
 
+bool Heap::isRuntimeExceptionObject(const JC_Instance *instance) const noexcept {
+  const auto matches = [&](const jref_t reference) {
+    if (reference.isNullPointer() || reference.isArray() ||
+        reference.isGlobalInstance() ||
+        reference.getOffset() > this->shared_storage->instances.size()) {
+      return false;
+    }
+    return this->shared_storage->instances.at(reference.getOffset() - 1).get() ==
+           instance;
+  };
+  if (matches(this->runtime_crypto_exception_rom) ||
+      matches(this->runtime_crypto_exception_imported)) {
+    return true;
+  }
+  for (const auto &root : this->shared_storage->runtime_exception_roots) {
+    if (matches(root.reference)) return true;
+  }
+  return false;
+}
+
+void Heap::nullTransientReferences(const jref_t reference) noexcept {
+  for (auto &array : this->shared_storage->arrays) {
+    if (array) array->nullTransientReferenceEntries(reference);
+  }
+}
+
 /*
  * Adding new instance in the transient heap.
  *

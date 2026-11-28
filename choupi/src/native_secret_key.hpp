@@ -13,5 +13,9 @@ bool nativeSecretKeyAccepts(jref_t key, uint16_t length);
 // Sets the key value from raw bytes and marks it initialized. Call only after
 // nativeSecretKeyAccepts(key, length) returned true.
 void nativeSecretKeySet(jref_t key, const uint8_t *bytes, uint16_t length);
+class JC_Instance;
+class JC_Array;
+// Logical key length of the KEYDATA array `data` (shorter than it for HMAC).
+uint16_t nativeKeyDataLength(JC_Instance &key, const JC_Array &data);
 
 } // namespace jcvm

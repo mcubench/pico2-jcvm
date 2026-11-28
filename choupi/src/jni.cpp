@@ -1577,9 +1577,8 @@ void fr_gouv_ssi_nativeimpl_NativeImplementation_assertSensitiveResultShort(
 
 jbyte_t fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(
     const jref_t objectref) {
-  if (objectref.isNullPointer()) {
-    throw Exceptions::NullPointerException;
-  }
+  // JCSystem.isTransient lists no NullPointerException; null is not transient.
+  if (objectref.isNullPointer()) return 0;
 
   Heap &heap = Context::getActiveContext().getHeap();
   if (objectref.isArray()) {

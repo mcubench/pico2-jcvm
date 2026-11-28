@@ -27,6 +27,10 @@ struct CardCallbacks {
                                    uint16_t response_capacity,
                                    uint16_t *response_length) = nullptr;
   void (*reset_card_manager)(void *context) = nullptr;
+  /// Whether an applet instance with this AID is installed. A SELECT for an
+  /// unknown AID returns 6A82 and keeps the current selection.
+  bool (*exists)(void *context, const uint8_t *aid, uint8_t aid_length) =
+      nullptr;
 };
 
 enum class SessionResult { NoResponse, Response, ProtocolError };

@@ -388,16 +388,11 @@ int main() {
     return 1;
   }
 
-  try {
-    jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(
-        jcvm::jref_t{});
-    std::cerr << "isTransient accepted a null reference\n";
+  // JCSystem.isTransient lists no exception; null is NOT_A_TRANSIENT_OBJECT.
+  if (jcvm::fr_gouv_ssi_nativeimpl_NativeImplementation_isTransient(
+          jcvm::jref_t{}) != 0) {
+    std::cerr << "isTransient(null) did not return NOT_A_TRANSIENT_OBJECT\n";
     return 1;
-  } catch (jcvm::Exceptions error) {
-    if (error != jcvm::Exceptions::NullPointerException) {
-      std::cerr << "isTransient null raised wrong exception\n";
-      return 1;
-    }
   }
 
   try {

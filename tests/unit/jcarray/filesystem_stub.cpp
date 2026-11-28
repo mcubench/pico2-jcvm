@@ -260,4 +260,13 @@ jbool_t Class_Handler::docheckcast(
   return TRUE;
 }
 #pragma GCC diagnostic pop
+// Applet-transaction RAM undo is not exercised by this unit test.
+std::vector<uint8_t> *FlashMemory_Handler::findVolatileUndo(const void *) noexcept {
+  return nullptr;
+}
+bool FlashMemory_Handler::needsVolatileUndo(const void *) noexcept { return false; }
+void FlashMemory_Handler::addVolatileUndo(void *, VolatileRestore,
+                                          std::vector<uint8_t>) {}
+void FlashMemory_Handler::forgetVolatileUndo(const void *) noexcept {}
+void FlashMemory_Handler::setAppletTransactionEndHook(void (*)(bool)) noexcept {}
 } // namespace jcvm

@@ -152,7 +152,7 @@ void Bytecodes::bc_athrow() {
 
   TRACE_JCVM_DEBUG("ATHROW");
 
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
   {
     const auto &frame = stack.getCurrentFrame();
     std::printf("CHOUPI:ATHROW depth=%u package=%u\r\n",
@@ -162,7 +162,7 @@ void Bytecodes::bc_athrow() {
   }
 #endif
   thrown_reference = stack.pop_ReferenceValue();
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
   std::printf("CHOUPI:ATHROW ref=%08X\r\n",
               static_cast<unsigned>(thrown_reference.reference.compact()));
   std::fflush(stdout);
@@ -236,7 +236,7 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
   }
 #endif
 
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
   static uint8_t exception_trace_budget = 0;
   if (exception_trace_budget < 8) {
     const auto field_count = exception->getNumberOfFields();
@@ -288,7 +288,7 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
                    static_cast<unsigned>(method_component->exception_handlers().size()));
     }
 #endif
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
     if (exception_trace_budget <= 8) {
       std::printf("CHOUPI:EXCEPTION_FRAME package=%u pc=%u opcode=%02X caller=%u\r\n",
                   static_cast<unsigned>(package.getPackageID()),
@@ -350,8 +350,15 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
       const auto *range_start = methods.data() + start_method_offset;
       const auto *range_end = methods.data() + protected_range_end;
       const pc_t &frame_pc = stack.getPC();
+      // Decode from this method's entry: a ROM frame's PC range spans the
+      // whole method component, whose method headers are not bytecode.
+      const uint8_t *method_start = stack.getCurrentFrame().getMethodStartPC();
       const bool start_boundary =
-          frame_pc.isInstructionBoundary(range_start, false);
+          frame_pc.containsAddress(range_start, false) &&
+          range_start >= method_start && range_end > range_start &&
+          cap_instruction_boundaries::is_instruction_start(
+              method_start, static_cast<std::size_t>(range_end - method_start),
+              static_cast<std::size_t>(range_start - method_start));
       const bool end_in_frame = frame_pc.containsAddress(range_end, true);
 #ifdef PC_VERSION
       if (trace_dispatch) {
@@ -389,7 +396,7 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
         }
 #endif
         const auto catch_class = catch_cp.resolveClassref(catch_ref);
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
         if (exception_trace_budget <= 8) {
           std::printf(
               "CHOUPI:EXCEPTION_CATCH_REF index=%u external=%u "
@@ -453,8 +460,16 @@ void Bytecodes::doThrow(jref_t objectref, const uint8_t reference_owner) {
         // Handler offsets come from the uploaded Method component. Keep the
         // transfer inside this frame and reject offsets into instruction
         // operands just like dynamic-package branch targets.
-        stack.getPC().setBranchFromOffset(
-            methods.data() + handler_method_offset, 0, true);
+        const uint8_t *handler = methods.data() + handler_method_offset;
+        const uint8_t *entry = stack.getCurrentFrame().getMethodStartPC();
+        const uint8_t *methods_end = methods.data() + methods.size();
+        if (handler < entry ||
+            !cap_instruction_boundaries::is_instruction_start(
+                entry, static_cast<std::size_t>(methods_end - entry),
+                static_cast<std::size_t>(handler - entry))) {
+          throw Exceptions::SecurityException;
+        }
+        stack.getPC().setBranchFromOffset(handler, 0, false);
         return;
       }
     }

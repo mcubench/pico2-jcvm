@@ -1998,6 +1998,7 @@ public final class JCTransactionProbe extends Applet {
         buffer[0] = 1;
         break;
       case (byte)144: {
+        final byte before = transactionCapacityArray[0];
         short reason = 0;
         try {
           Util.setShort(transactionCapacityArray, (short)0, (short)0x1234);
@@ -2008,7 +2009,8 @@ public final class JCTransactionProbe extends Applet {
         if (depth != 0) JCSystem.abortTransaction();
         buffer[0] = (byte)reason;
         buffer[1] = depth;
-        buffer[2] = transactionCapacityArray[0];
+        // 0 when the failed atomic update left the first byte unchanged.
+        buffer[2] = (byte)(transactionCapacityArray[0] == before ? 0 : 1);
         length = 3;
         break;
       }

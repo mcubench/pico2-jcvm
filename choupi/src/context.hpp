@@ -107,6 +107,7 @@ private:
   bool apdu_outgoing_no_chaining = false;
   /// Reason code for the next VM-raised SystemException.
   uint16_t pending_system_exception_reason = 1;
+  uint16_t pending_apdu_exception_reason = 1;
   /// Reason code for the next VM-raised CryptoException.
   uint16_t pending_crypto_exception_reason = 1;
   uint16_t pending_util_exception_reason = 1;
@@ -274,6 +275,7 @@ public:
   void assertSensitiveResultShort(jshort_t value, uint8_t comparison) const;
   void setPendingSystemExceptionReason(uint16_t reason) noexcept;
   uint16_t consumePendingSystemExceptionReason() noexcept;
+  uint16_t consumePendingAPDUExceptionReason() noexcept;
   void setPendingCryptoExceptionReason(uint16_t reason) noexcept;
   uint16_t consumePendingCryptoExceptionReason() noexcept;
   void setPendingPINExceptionReason(uint16_t reason) noexcept {
@@ -297,11 +299,16 @@ public:
   uint16_t pendingSystemExceptionReason() const noexcept {
     return pending_system_exception_reason;
   }
+  uint16_t pendingAPDUExceptionReason() const noexcept {
+    return pending_apdu_exception_reason;
+  }
   uint16_t pendingTransactionExceptionReason() const noexcept {
     return pending_transaction_exception_reason;
   }
   /// Append context and heap-owned Java references for root tracing.
   void appendRootReferences(std::vector<jref_t> &references) const;
+  /// Record an object created by applet code inside an applet transaction.
+  void noteTransactionAllocation(jref_t reference);
   /// Visit context and heap-owned references without a temporary root vector.
   void visitRootReferences(Heap::ReferenceVisitor visitor,
                            void *visitor_context,

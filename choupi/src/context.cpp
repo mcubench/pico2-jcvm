@@ -512,7 +512,49 @@ Context::Context(const japplet_ID_t appletID,
   throw Exceptions::RuntimeException;
 }
 
+namespace {
+struct TransactionAllocation {
+  Context *context;
+  jref_t reference;
+};
+std::vector<TransactionAllocation> transaction_allocations;
+
+// JCRE 7.6.3: references to objects created in an aborted transaction become
+// null. Persistent fields were rolled back already; null the typed stack slots
+// and transient reference arrays, which no record snapshot covers.
+// shortcut: only bytecode allocations are tracked (not makeTransient* or
+// native buildKey), and only this context's stack is scanned; extend
+// noteTransactionAllocation callers if an applet relies on those cases.
+void on_applet_transaction_end(const bool aborted) {
+  if (aborted) {
+    for (const auto &allocation : transaction_allocations) {
+      allocation.context->getStack().nullReference(
+          allocation.reference, allocation.context->getAppletPackageID());
+      allocation.context->getHeap().nullTransientReferences(allocation.reference);
+    }
+  }
+  transaction_allocations.clear();
+}
+
+const bool transaction_end_hook_registered = [] {
+  FlashMemory_Handler::setAppletTransactionEndHook(&on_applet_transaction_end);
+  return true;
+}();
+} // namespace
+
+void Context::noteTransactionAllocation(const jref_t reference) {
+  if (FlashMemory_Handler::appletWriteTransactionActive()) {
+    transaction_allocations.push_back({this, reference});
+  }
+}
+
 Context::~Context() noexcept {
+  transaction_allocations.erase(
+      std::remove_if(transaction_allocations.begin(), transaction_allocations.end(),
+                     [this](const TransactionAllocation &allocation) {
+                       return allocation.context == this;
+                     }),
+      transaction_allocations.end());
   for (Context *&context : retained_contexts) {
     if (context == this) context = nullptr;
   }
@@ -1058,9 +1100,15 @@ void Context::setAPDUOutgoingLength(const uint16_t length) {
   if (this->apdu_state != 3) {
     throw Exceptions::APDUException;
   }
-  if (length > this->apdu_response_data.size() ||
+  // Applets without ExtendedLength get the 260-byte buffer and a 256-byte limit.
+  const auto buffer = this->getAPDUJavaBuffer();
+  const uint16_t limit = buffer && buffer->size() > 260
+                             ? static_cast<uint16_t>(this->apdu_response_data.size())
+                             : 256;
+  if (length > limit ||
       (this->apdu_outgoing_no_chaining &&
        (length > 252 || length > this->apdu_expected_response_length))) {
+    this->pending_apdu_exception_reason = 3; // APDUException.BAD_LENGTH
     throw Exceptions::APDUException;
   }
   this->apdu_response_declared_length = length;
@@ -1201,6 +1249,12 @@ void Context::assertSensitiveResultShort(const jshort_t value,
 
 void Context::setPendingSystemExceptionReason(const uint16_t reason) noexcept {
   this->pending_system_exception_reason = reason;
+}
+
+uint16_t Context::consumePendingAPDUExceptionReason() noexcept {
+  const uint16_t reason = this->pending_apdu_exception_reason;
+  this->pending_apdu_exception_reason = 1; // APDUException.ILLEGAL_USE
+  return reason;
 }
 
 uint16_t Context::consumePendingSystemExceptionReason() noexcept {

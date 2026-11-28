@@ -39,6 +39,8 @@ Updated 2026-11-28. See [TODO.md](../TODO.md) for active work and
 
 ## Next work
 
+- Claude review fixes (`20261128-1139-review-findings-fixes`): 15 regressions pass in VPCD and on EE11 (42/42, cleanup to ISD-only). Open review items are listed in that progress record.
+
 - Windows: one request `WIN-CAMPAIGN-3BE60283-20261127` (`run-all.ps1`).
   When the ZIP returns, run `tools/check-windows-results.py ZIP` and close the
   items it passes. The ECTester comparison is closed on Linux evidence. Open:

@@ -191,6 +191,8 @@ public:
   bool empty() noexcept;
   /// Whether the current frame is the top-level interpreter entry.
   bool isRootFrame() const noexcept;
+  /// Null every typed reference slot holding `reference` from `package_owner`.
+  void nullReference(jref_t reference, uint8_t package_owner) noexcept;
   /// Save a typed method result when the top-level entry returns.
   void setRootReturnValue(uint32_t value) noexcept;
   void setRootReturnValue(uint32_t value, ReturnKind kind) noexcept;

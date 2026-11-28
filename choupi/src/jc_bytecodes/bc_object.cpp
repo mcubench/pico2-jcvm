@@ -403,8 +403,9 @@ bool Bytecodes::dispatchJavaException(const Exceptions exception) {
         0, static_cast<jshort_t>(reason));
 
   } else if (exception == Exceptions::APDUException) {
-    // APDU state-machine violations are APDUException.ILLEGAL_USE.
-    this->context.getHeap().getInstance(reference)->setField_Short(0, 1);
+    this->context.getHeap().getInstance(reference)->setField_Short(
+        0, static_cast<jshort_t>(
+               this->context.consumePendingAPDUExceptionReason()));
   }
   this->doThrow(reference);
   return true;
@@ -494,6 +495,7 @@ void Bytecodes::bc_new() {
     // CAPIN-05 (3): lets uploaded code run one ROM constructor on this
     // object through invokespecial, and on no other ROM-class object.
     heap.getInstance(objectref)->markConstructorPending();
+    this->context.noteTransactionAllocation(objectref);
   }
 #ifndef PC_VERSION
   choupi_install_stage(3);

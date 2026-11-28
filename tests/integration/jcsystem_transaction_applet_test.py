@@ -338,25 +338,24 @@ def main() -> int:
                 )
                 if args.case and 131 in args.case:
                     cases += ((131, b"\xff\xff", "read back oversized ArrayLogic writes"),)
-                if args.case:
-                    cases += (
-                        (74, b"", "unknown AID SELECT preserves the current applet"),
-                        (133, b"\x11", "abort restores an ordinary local array"),
-                        (134, b"\x01", "abort clears a local reference allocated in the transaction"),
-                        (135, b"\x03", "Util.arrayCompare rejects null and negative length"),
-                        (136, b"\x01", "JCSystem.isTransient(null) returns NOT_A_TRANSIENT_OBJECT"),
-                        (137, b"\x01", "APDU.receiveBytes before incoming state reports ILLEGAL_USE"),
-                        (138, b"", "short APDU outgoing length above 256 reports BAD_LENGTH"),
-                        (139, b"", "outgoing length above the no-chaining limit reports BAD_LENGTH"),
-                        (140, b"\x42", "completed APDU output survives a warning status"),
-                        (141, b"\x01\x02\x03\x04", "dense int switch uses 32-bit bounds"),
-                        (142, b"\x01", "select() throwing ISOException is reported as 6999"),
-                        (143, b"\x42", "GET RESPONSE with no VM pending data reaches the applet"),
-                        (144, b"\x03\x00\x00", "failed atomic Util.setShort closes its implicit transaction"),
-                        (145, b"\x00", "ECDSA accepts an initialized transient EC private key"),
-                        (146, bytes.fromhex("0105020304050606010203040506"),
-                         "HMAC length replacement reuses storage and rolls back key bytes"),
-                    )
+                cases += (
+                    (74, b"", "unknown AID SELECT preserves the current applet"),
+                    (133, b"\x11", "abort restores an ordinary local array"),
+                    (134, b"\x01", "abort clears a local reference allocated in the transaction"),
+                    (135, b"\x03", "Util.arrayCompare rejects null and negative length"),
+                    (136, b"\x01", "JCSystem.isTransient(null) returns NOT_A_TRANSIENT_OBJECT"),
+                    (137, b"\x01", "APDU.receiveBytes before incoming state reports ILLEGAL_USE"),
+                    (138, b"", "short APDU outgoing length above 256 reports BAD_LENGTH"),
+                    (139, b"", "outgoing length above the no-chaining limit reports BAD_LENGTH"),
+                    (140, b"\x42", "completed APDU output survives a warning status"),
+                    (141, b"\x01\x02\x03\x04", "dense int switch uses 32-bit bounds"),
+                    (142, b"\x01", "select() throwing ISOException is reported as 6999"),
+                    (143, b"\x42", "GET RESPONSE with no VM pending data reaches the applet"),
+                    (144, b"\x03\x00\x00", "failed atomic Util.setShort closes its implicit transaction"),
+                    (145, b"\x00", "ECDSA accepts an initialized transient EC private key"),
+                    (146, bytes.fromhex("0105020304050606010203040506"),
+                     "HMAC length replacement reuses storage and rolls back key bytes"),
+                )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
                     if args.case

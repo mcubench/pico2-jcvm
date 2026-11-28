@@ -106,6 +106,28 @@ uint64_t persistent_array_identity_next = 1;
 uint32_t persistent_array_identity_reserved_through = 0;
 bool persistent_array_identity_counter_dirty = false;
 
+struct VolatileUndoRecord {
+  void *object;
+  FlashMemory_Handler::VolatileRestore restore;
+  std::vector<uint8_t> contents;
+};
+std::vector<VolatileUndoRecord> volatile_undo_records;
+void (*applet_transaction_end_hook)(bool aborted) = nullptr;
+
+// Restore RAM-resident objects on abort, then let the context null references
+// to objects created inside the transaction.
+void finish_applet_transaction(const bool applet_owned, const bool aborted) {
+  if (aborted) {
+    for (auto &record : volatile_undo_records) {
+      record.restore(record.object, record.contents);
+    }
+  }
+  volatile_undo_records.clear();
+  if (applet_owned && applet_transaction_end_hook != nullptr) {
+    applet_transaction_end_hook(aborted);
+  }
+}
+
 bool tags_equal(const fs::Tag &left, const fs::Tag &right) noexcept {
   return left.len == right.len &&
          std::memcmp(left.value, right.value, left.len) == 0;
@@ -650,6 +672,7 @@ extern "C" uint8_t choupi_persistent_write_transaction_active(void) {
 #ifdef CHOUPI_PC_RP2350_FS_OVERLAY
 extern "C" void rp2350_fs_test_reset_persistent_transaction_state(void) {
   persistent_write_snapshots.clear();
+  volatile_undo_records.clear();
   persistent_write_snapshots_disabled = false;
   persistent_write_transaction_active = false;
   persistent_write_recovery_required = false;
@@ -671,6 +694,7 @@ bool FlashMemory_Handler::beginPersistentWriteTransaction(
     return false;
   }
   persistent_write_snapshots.clear();
+  volatile_undo_records.clear();
   persistent_write_snapshots_disabled = false;
   persistent_write_capacity_enforced = enforce_commit_capacity;
   persistent_write_transaction_applet_owned = false;
@@ -708,6 +732,7 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
 #endif
     return false;
   }
+  const bool applet_owned = persistent_write_transaction_applet_owned;
   persistent_write_transaction_active = false;
   if (fs_sync() != 0) {
 #ifdef RP2350_FS_OVERLAY_TEST
@@ -720,6 +745,7 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
     if (restored_persistent_records) {
       ++persistent_write_rollback_generation;
     }
+    finish_applet_transaction(applet_owned, true);
     if (restored && persistent_array_identity_counter_dirty &&
         !persist_array_identity_reservation()) {
       return false;
@@ -732,6 +758,7 @@ bool FlashMemory_Handler::commitPersistentWriteTransaction() noexcept {
   persistent_write_transaction_applet_owned = false;
   persistent_write_transaction_used_bytes = 0;
   persistent_array_identity_counter_dirty = false;
+  finish_applet_transaction(applet_owned, false);
   return true;
 }
 
@@ -739,12 +766,14 @@ bool FlashMemory_Handler::rollbackPersistentWriteTransaction() noexcept {
   if (!persistent_write_transaction_active) {
     return false;
   }
+  const bool applet_owned = persistent_write_transaction_applet_owned;
   const bool restored_persistent_records =
       !persistent_write_snapshots.empty();
   const bool success = rollback_persistent_writes();
   if (restored_persistent_records) {
     ++persistent_write_rollback_generation;
   }
+  finish_applet_transaction(applet_owned, true);
   const bool counter_preserved =
       !success || !persistent_array_identity_counter_dirty ||
       persist_array_identity_reservation();
@@ -767,6 +796,42 @@ bool FlashMemory_Handler::appletWriteTransactionActive() noexcept {
 bool FlashMemory_Handler::abortAppletWriteTransaction() noexcept {
   if (!appletWriteTransactionActive()) return true;
   return rollbackPersistentWriteTransaction();
+}
+
+std::vector<uint8_t> *
+FlashMemory_Handler::findVolatileUndo(const void *object) noexcept {
+  for (auto &record : volatile_undo_records) {
+    if (record.object == object) return &record.contents;
+  }
+  return nullptr;
+}
+
+bool FlashMemory_Handler::needsVolatileUndo(const void *object) noexcept {
+  return appletWriteTransactionActive() && findVolatileUndo(object) == nullptr;
+}
+
+void FlashMemory_Handler::addVolatileUndo(void *object,
+                                          const VolatileRestore restore,
+                                          std::vector<uint8_t> contents) {
+  // Not charged to the commit capacity: these RAM copies are not the commit
+  // buffer, and the JCRE itself writes RAM objects (exception reasons) while
+  // reporting a full buffer. Each object is copied at most once per transaction.
+  volatile_undo_records.push_back({object, restore, std::move(contents)});
+}
+
+void FlashMemory_Handler::forgetVolatileUndo(const void *object) noexcept {
+  if (volatile_undo_records.empty()) return;
+  volatile_undo_records.erase(
+      std::remove_if(volatile_undo_records.begin(), volatile_undo_records.end(),
+                     [object](const VolatileUndoRecord &record) {
+                       return record.object == object;
+                     }),
+      volatile_undo_records.end());
+}
+
+void FlashMemory_Handler::setAppletTransactionEndHook(
+    void (*hook)(bool aborted)) noexcept {
+  applet_transaction_end_hook = hook;
 }
 
 uint16_t FlashMemory_Handler::maxCommitCapacity() noexcept {

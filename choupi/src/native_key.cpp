@@ -366,6 +366,32 @@ void writeKeyBytes(const std::shared_ptr<JC_Array> &array,
     array->setByteEntry(i, contents[i]);
   }
 }
+bool hmacType(uint8_t type) {
+  return type == kHmacPersistent || type == kHmacTransientReset ||
+         type == kHmacTransientDeselect;
+}
+// HMAC keys reuse one buffer across lengths and keep the logical length in
+// ecK, which HMAC keys do not otherwise use. A zero ecK (keys stored by older
+// firmware) means the buffer length is the key length.
+void storeHmacKey(JC_Instance &key, uint8_t type, const uint8_t *bytes,
+                  uint16_t length) {
+  auto target = arrayField(key, ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA, JAVA_ARRAY_T_BYTE);
+  if (length > target->size()) {
+    // Grow once to the full capacity; wipe the old buffer before dropping it.
+    writeKeyBytes(target, std::vector<uint8_t>(target->size(), 0));
+    Heap &heap = Context::getActiveContext().getHeap();
+    const bool transient = transientType(type);
+    key.setField_Reference(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
+        allocateArray(heap, static_cast<uint16_t>(key.getField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_SIZE)),
+                      JAVA_ARRAY_T_BYTE, transient,
+                      transient ? clearEvent(type) : ClearEvent::None));
+    target = arrayField(key, ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA, JAVA_ARRAY_T_BYTE);
+  }
+  std::vector<uint8_t> contents(target->size(), 0);
+  std::copy(bytes, bytes + length, contents.begin());
+  writeKeyBytes(target, contents);
+  key.setField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK, static_cast<jshort_t>(length));
+}
 void checkInput(const std::shared_ptr<JC_Array> &array, jshort_t offset,
                 jshort_t length) {
   if (!array) throw Exceptions::NullPointerException;
@@ -721,26 +747,11 @@ void javacard_security_NativeKey_setKey(jref_t receiver,
   if (length <= 0 || length > capacity)
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   checkInput(source, offset, length);
-  auto target = arrayField(*key,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
-      JAVA_ARRAY_T_BYTE);
-  if (static_cast<uint16_t>(length) != target->size()) {
-    // Resize only when the length changes, so repeated setKey of the same
-    // length writes no new record.
-    Heap &heap = Context::getActiveContext().getHeap();
-    const bool transient = transientType(type);
-    key->setField_Reference(
-        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
-        allocateArray(heap, static_cast<uint16_t>(length), JAVA_ARRAY_T_BYTE,
-                      transient,
-                      transient ? clearEvent(type) : ClearEvent::None));
-    target = arrayField(*key,
-        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
-        JAVA_ARRAY_T_BYTE);
-  }
-  for (uint16_t i = 0; i < target->size(); ++i)
-    target->setByteEntry(i,
+  std::vector<uint8_t> bytes(static_cast<size_t>(length));
+  for (uint16_t i = 0; i < bytes.size(); ++i)
+    bytes[i] = static_cast<uint8_t>(
         source->getByteEntry(static_cast<uint16_t>(offset + i)));
+  storeHmacKey(*key, type, bytes.data(), static_cast<uint16_t>(length));
   const jref_t transientRef = key->getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TRANSIENTINITIALIZED);
   if (!transientRef.isNullPointer()) {
@@ -761,10 +772,11 @@ jbyte_t javacard_security_NativeKey_getKey(jref_t receiver,
     throwCryptoException(CryptoExceptionReason::UninitializedKey);
   auto source = arrayField(*key, ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
                            JAVA_ARRAY_T_BYTE);
-  checkInput(destination, offset, static_cast<jshort_t>(source->size()));
-  for (uint16_t i = 0; i < source->size(); ++i)
+  const uint16_t length = nativeKeyDataLength(*key, *source);
+  checkInput(destination, offset, static_cast<jshort_t>(length));
+  for (uint16_t i = 0; i < length; ++i)
     destination->setByteEntry(static_cast<uint16_t>(offset + i), source->getByteEntry(i));
-  return static_cast<jbyte_t>(source->size());
+  return static_cast<jbyte_t>(length);
 }
 
 #define KEY_COMPONENT_METHODS(name, index) \
@@ -873,22 +885,12 @@ void nativeSecretKeySet(jref_t reference, const uint8_t *bytes,
   auto key = nativeKey(reference);
   const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
-  auto target = arrayField(*key,
-      ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
-      JAVA_ARRAY_T_BYTE);
-  if (length != target->size()) {
-    // HMAC only (nativeSecretKeyAccepts): resize as setKey(byte[],short,short).
-    Heap &heap = Context::getActiveContext().getHeap();
-    const bool transient = transientType(type);
-    key->setField_Reference(
-        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
-        allocateArray(heap, length, JAVA_ARRAY_T_BYTE, transient,
-                      transient ? clearEvent(type) : ClearEvent::None));
-    target = arrayField(*key,
-        ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA,
-        JAVA_ARRAY_T_BYTE);
+  if (hmacType(type)) {
+    storeHmacKey(*key, type, bytes, length);
+  } else {
+    writeKeyBytes(arrayField(*key, ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_KEYDATA, JAVA_ARRAY_T_BYTE),
+                  std::vector<uint8_t>(bytes, bytes + length));
   }
-  writeKeyBytes(target, std::vector<uint8_t>(bytes, bytes + length));
   const jref_t transientRef = key->getField_Reference(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TRANSIENTINITIALIZED);
   if (!transientRef.isNullPointer()) {
@@ -901,6 +903,14 @@ void nativeSecretKeySet(jref_t reference, const uint8_t *bytes,
         ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_PERSISTENTINITIALIZED,
         1);
   }
+}
+
+uint16_t nativeKeyDataLength(JC_Instance &key, const JC_Array &data) {
+  const uint8_t type = static_cast<uint8_t>(key.getField_Byte(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
+  const jshort_t length = key.getField_Short(ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_ECK);
+  return hmacType(type) && length > 0 && static_cast<uint16_t>(length) <= data.size()
+             ? static_cast<uint16_t>(length)
+             : static_cast<uint16_t>(data.size());
 }
 
 } // namespace jcvm

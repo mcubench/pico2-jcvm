@@ -403,6 +403,8 @@ if(PICO_PLATFORM STREQUAL "rp2350-arm-s" AND CHOUPI_VM_SOURCES)
     target_compile_definitions(pico2_choupi PRIVATE CHOUPI_DEBUG_HEAP_GC=1)
   endif()
   if(CHOUPI_DEBUG_CCID_APPLET)
+    target_compile_definitions(choupi_vm_core PRIVATE
+      CHOUPI_DEBUG_CCID_APPLET=1)
     target_compile_definitions(pico2_choupi PRIVATE
       CHOUPI_DEBUG_CCID_APPLET=1)
   endif()

@@ -255,6 +255,7 @@ JC_Instance::JC_Instance(JC_Instance &&other) noexcept
  * Default destructor
  */
 JC_Instance::~JC_Instance() noexcept {
+  FlashMemory_Handler::forgetVolatileUndo(this);
   delete[] this->persistent_tag_overflow;
   if (this->fields != nullptr) {
     delete this->fields;
@@ -583,7 +584,34 @@ std::pair<jref_t, uint8_t> JC_Instance::getField_ReferenceWithOwner(
  * @param[index] index of the instance field to set.
  * @param[value] new value.
  */
+void JC_Instance::snapshotVolatileFields() {
+  if (this->isPersistent() || this->fields == nullptr ||
+      !FlashMemory_Handler::needsVolatileUndo(this) ||
+      this->getOwner().isRuntimeExceptionObject(this)) {
+    return; // JCRE-owned exception objects are not transactional.
+  }
+  std::vector<uint8_t> contents(this->fields->size() * sizeof(jc_field_t));
+  for (uint16_t i = 0; i < this->fields->size(); ++i) {
+    std::memcpy(contents.data() + i * sizeof(jc_field_t), &this->fields->at(i),
+                sizeof(jc_field_t));
+  }
+  FlashMemory_Handler::addVolatileUndo(
+      this,
+      [](void *object, const std::vector<uint8_t> &saved) {
+        auto &instance = *static_cast<JC_Instance *>(object);
+        // shortcut: as for arrays, an instance promoted later in the same
+        // transaction is left to record rollback.
+        if (instance.isPersistent()) return;
+        for (uint16_t i = 0; i < instance.fields->size(); ++i) {
+          std::memcpy(&instance.fields->at(i), saved.data() + i * sizeof(jc_field_t),
+                      sizeof(jc_field_t));
+        }
+      },
+      std::move(contents));
+}
+
 void JC_Instance::setField_Byte(uint16_t index, jbyte_t value) {
+  this->snapshotVolatileFields();
   if (this->isPersistent()) {
     (void)this->getFields();
   }
@@ -620,6 +648,11 @@ void JC_Instance::setField_ByteDurable(const uint16_t index,
   }
   field.type = FieldType::FIELD_TYPE_BYTE;
   field.value = static_cast<jword_t>(BYTE_TO_WORD(value));
+  // OwnerPIN counters never take part in a transaction: keep them on abort.
+  if (auto *saved = FlashMemory_Handler::findVolatileUndo(this)) {
+    std::memcpy(saved->data() + index * sizeof(jc_field_t), &field,
+                sizeof(jc_field_t));
+  }
 }
 
 /**
@@ -629,6 +662,7 @@ void JC_Instance::setField_ByteDurable(const uint16_t index,
  * @param[value] new value.
  */
 void JC_Instance::setField_Short(const uint16_t index, const jshort_t value) {
+  this->snapshotVolatileFields();
   if (this->isPersistent()) {
     (void)this->getFields();
   }
@@ -659,6 +693,7 @@ void JC_Instance::setField_Short(const uint16_t index, const jshort_t value) {
  * @param[value] new value.
  */
 void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
+  this->snapshotVolatileFields();
   if (this->isPersistent()) {
     (void)this->getFields();
   }
@@ -701,6 +736,7 @@ void JC_Instance::setField_Int(const uint16_t index, const jint_t value) {
  */
 void JC_Instance::setField_Reference(const uint16_t index, const jref_t ref,
                                      uint8_t reference_owner) {
+  this->snapshotVolatileFields();
   // Temporary JCRE Entry Point Objects (global arrays such as the APDU
   // buffer, OneShot instances) cannot be stored in instance fields.
   if ((ref.isGlobalArray() || Heap::isTemporaryGlobalInstance(ref)) &&

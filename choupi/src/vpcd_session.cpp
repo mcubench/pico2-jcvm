@@ -159,6 +159,11 @@ SessionResult Session::handle_message(const uint8_t *message,
   }
 
   if (is_select_by_aid(message, message_length)) {
+    if (callbacks_.exists != nullptr &&
+        !callbacks_.exists(callbacks_.context, message + 5, message[4])) {
+      append_status(response, 0x6a82);
+      return SessionResult::Response;
+    }
     card_manager_selected_ = false;
     clear_or_deselect(message + 5, message[4]);
     const uint8_t aid_length = message[4];

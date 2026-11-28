@@ -175,7 +175,44 @@ JC_Array::JC_Array(Heap &owner, const jc_array_type type,
 /*
  * Default destructor; JCVMArray owns the backing buffer.
  */
-JC_Array::~JC_Array() noexcept = default;
+JC_Array::~JC_Array() noexcept { FlashMemory_Handler::forgetVolatileUndo(this); }
+
+// Layout: element bytes, then reference_value_owners, then
+// global_reference_owners. All three keep their size for the array's life.
+void JC_Array::snapshotVolatileContents() {
+  if (this->isPersistent() || this->isTransientArray() ||
+      this->getOwner().isGlobalHeap() ||
+      !FlashMemory_Handler::needsVolatileUndo(this)) {
+    return;
+  }
+  // The JCRE-owned APDU buffers are global, never transactional.
+  const Context &context = Context::getActiveContext();
+  if (context.getAPDUJavaBuffer().get() == this ||
+      context.getAPDUOutgoingBuffer().get() == this) {
+    return;
+  }
+  std::vector<uint8_t> contents;
+  contents.reserve(this->array.size() + this->reference_value_owners.size() +
+                   this->global_reference_owners.size());
+  for (uint16_t i = 0; i < this->array.size(); ++i) contents.push_back(this->array[i]);
+  contents.insert(contents.end(), this->reference_value_owners.begin(),
+                  this->reference_value_owners.end());
+  contents.insert(contents.end(), this->global_reference_owners.begin(),
+                  this->global_reference_owners.end());
+  FlashMemory_Handler::addVolatileUndo(
+      this,
+      [](void *object, const std::vector<uint8_t> &saved) {
+        auto &array = *static_cast<JC_Array *>(object);
+        // shortcut: an array promoted to flash later in the same transaction
+        // is left to record rollback; restore it too if that case shows up.
+        if (array.isPersistent()) return;
+        size_t at = 0;
+        for (uint16_t i = 0; i < array.array.size(); ++i) array.array[i] = saved[at++];
+        for (auto &owner : array.reference_value_owners) owner = saved[at++];
+        for (auto &owner : array.global_reference_owners) owner = saved[at++];
+      },
+      std::move(contents));
+}
 
 /*
  * Compute tag value
@@ -702,6 +739,7 @@ void JC_Array::setByteEntry(const uint16_t index, const jbyte_t value)
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
   checkArrayEntryIndex(*this, index);
+  this->snapshotVolatileContents();
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   switch (type) {
@@ -764,6 +802,10 @@ void JC_Array::setByteEntryNonAtomic(const uint16_t index,
     }
   } else {
     this->array[index] = value;
+    // Non-atomic writes stay after an abort (Util.arrayCopyNonAtomic).
+    if (auto *saved = FlashMemory_Handler::findVolatileUndo(this)) {
+      (*saved)[index] = static_cast<uint8_t>(value);
+    }
   }
 }
 
@@ -779,6 +821,7 @@ void JC_Array::setShortEntry(const uint16_t index, const jshort_t value)
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
   checkArrayEntryIndex(*this, index);
+  this->snapshotVolatileContents();
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_SHORT) {
@@ -825,6 +868,7 @@ void JC_Array::setIntEntry(const uint16_t index, const jint_t value)
 #endif /* !JCVM_SECURE_HEAP_ACCESS */
 {
   checkArrayEntryIndex(*this, index);
+  this->snapshotVolatileContents();
 #ifdef JCVM_SECURE_HEAP_ACCESS
 
   if (this->type != jc_array_type::JAVA_ARRAY_T_INT) {
@@ -878,6 +922,7 @@ void JC_Array::setReferenceEntry(const uint16_t index, const jref_t value,
 {
   Heap::noteReachabilityChange();
   checkArrayEntryIndex(*this, index);
+  this->snapshotVolatileContents();
   if (value.isGlobalArray() || Heap::isTemporaryGlobalInstance(value)) {
     // A global array or a temporary JCRE Entry Point Object (OneShot) cannot
     // be stored in an array component.
@@ -1323,6 +1368,29 @@ void JC_Array::clearTransientData() {
             this->global_reference_owners.end(), kNoGlobalReferenceOwner);
   std::fill(this->reference_value_owners.begin(),
             this->reference_value_owners.end(), kNoGlobalReferenceOwner);
+}
+
+void JC_Array::nullTransientReferenceEntries(const jref_t reference) noexcept {
+  if (!this->isTransientArray() || this->type != JAVA_ARRAY_T_REFERENCE) return;
+  const uint16_t base = this->isPersistent()
+      ? static_cast<uint16_t>(this->computeTag().len + 1) : 0;
+  const uint16_t value = reference.compact();
+  for (uint16_t index = 0; index < this->logical_length; ++index) {
+    if (!this->reference_value_owners.empty() &&
+        this->reference_value_owners[index] != kNoGlobalReferenceOwner) {
+      continue; // foreign heap entry
+    }
+    const uint16_t offset = static_cast<uint16_t>(base + index * sizeof(jref_t));
+    if (offset + 1 >= this->array.size() ||
+        BYTES_TO_SHORT(this->array[offset], this->array[offset + 1]) != value) {
+      continue;
+    }
+    this->array[offset] = 0;
+    this->array[static_cast<uint16_t>(offset + 1)] = 0;
+    if (!this->global_reference_owners.empty()) {
+      this->global_reference_owners[index] = kNoGlobalReferenceOwner;
+    }
+  }
 }
 
 } // namespace jcvm

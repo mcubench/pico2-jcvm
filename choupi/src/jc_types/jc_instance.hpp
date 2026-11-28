@@ -136,6 +136,8 @@ public:
       const uint16_t index);
 
   /// set byte or boolean field from object.
+  /// Save RAM fields before the first change in an applet transaction.
+  void snapshotVolatileFields();
   void setField_Byte(const uint16_t index, const jbyte_t value);
   /// Like setField_Byte, but outside any transaction and durable before
   /// returning when the object is persistent.

@@ -2522,6 +2522,9 @@ uint16_t choupi_vm_select_applet(void) {
   selected_applet_is_selecting = true;
   selected_applet_context->setAppletActive(true);
   uint16_t status = invoke_selected_applet_method(6, &selected);
+  // JCRE 3.0.5 section 4.2: select() throwing or returning false fails the
+  // selection with 6999. 6F00 stays only for a failed transaction abort.
+  if (status != 0x9000) status = 0x6999;
   const bool transaction_left_open =
       jcvm::FlashMemory_Handler::appletWriteTransactionActive();
   if (transaction_left_open &&
@@ -2685,15 +2688,16 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
       throw status;
     }
 
-    const bool get_response = command[0] == 0x00 && command[1] == 0xc0;
+    // The JCRE owns GET RESPONSE only while it holds chained output; any
+    // other GET RESPONSE is an ordinary applet command.
+    const bool get_response = command[0] == 0x00 && command[1] == 0xc0 &&
+                              pending_apdu_response.has_pending();
     if (get_response) {
       if (command[2] != 0 || command[3] != 0) {
         status = 0x6a86;
       } else if (!parsed_command.has_expected_response_length ||
                  parsed_command.incoming_length != 0 || parsed_command.extended) {
         status = 0x6700;
-      } else if (!pending_apdu_response.has_pending()) {
-        status = 0x6a86;
       } else {
         data_length = pending_apdu_response.take(
             parsed_command.expected_response_length, response,
@@ -2868,7 +2872,15 @@ uint16_t choupi_vm_process_applet(const uint8_t *command,
                    static_cast<unsigned>(interpretor.lastExceptionOpcodeHistory()),
                    static_cast<unsigned>(interpretor.lastExceptionDepthHistory()));
     }
-    if (status == 0x9000) {
+    // ISO 7816-4 warnings (62xx, 63xx) may carry response data. Keep it only
+    // when the applet completed its output and it fits the expected length.
+    const bool warning_with_output =
+        ((status & 0xff00) == 0x6200 || (status & 0xff00) == 0x6300) &&
+        context.getAPDUState() == 6 &&
+        (!parsed_command.has_expected_response_length ||
+         context.getAPDUOutgoingLength() <=
+             parsed_command.expected_response_length);
+    if (status == 0x9000 || warning_with_output) {
       data_length = context.getAPDUOutgoingLength();
       if (static_cast<uint32_t>(data_length) + 2 > response_capacity ||
           context.getAPDUState() == 3 || context.getAPDUState() == 4 ||

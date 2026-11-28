@@ -515,11 +515,13 @@ uint16_t Interpretor::run() noexcept {
           this->depth_history);
     }
 #endif
+#ifdef CHOUPI_DEBUG_CCID_APPLET
     if (!this->startsAtMethodOffset && instruction_count % 1000000u == 0) {
       std::printf("CHOUPI:VM_PROGRESS ops=%lu opcode=0x%02X pc=%p\r\n",
                   static_cast<unsigned long>(instruction_count), bytecode,
                   static_cast<const void *>(stack.getPC().getValue()));
     }
+#endif
 
     // bytecodes interface
     Bytecodes bytecodes(context, this->entryFrameDepth,
@@ -539,7 +541,7 @@ uint16_t Interpretor::run() noexcept {
       // execute
       (bytecodes.*bc)();
     } catch (const UncaughtJavaException &uncaught) {
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
       std::printf("CHOUPI:UNCAUGHT_JAVA ref=%08X opcode=%02X depth=%u\r\n",
                   static_cast<unsigned>(uncaught.reference), bytecode,
                   static_cast<unsigned>(stack.frameDepth()));
@@ -561,7 +563,7 @@ uint16_t Interpretor::run() noexcept {
       stack.unwindToDepth(this->entryFrameDepth);
       return this->status_word;
     } catch (Exceptions e) {
-#ifndef PC_VERSION
+#if !defined(PC_VERSION) && defined(CHOUPI_DEBUG_CCID_APPLET)
       std::printf("CHOUPI:VM_CAUGHT_EXCEPTION id=%u opcode=%02X depth=%u\r\n",
                   static_cast<unsigned>(e), bytecode,
                   static_cast<unsigned>(stack.getCurrentFrame().getTOS() -
@@ -571,7 +573,7 @@ uint16_t Interpretor::run() noexcept {
       if (e == Exceptions::SystemException) {
         this->last_exception_reason = context.pendingSystemExceptionReason();
       } else if (e == Exceptions::APDUException) {
-        this->last_exception_reason = 1; // APDUException.ILLEGAL_USE
+        this->last_exception_reason = context.pendingAPDUExceptionReason();
       } else if (e == Exceptions::TransactionException) {
         this->last_exception_reason =
             context.pendingTransactionExceptionReason();

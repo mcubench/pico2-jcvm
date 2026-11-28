@@ -126,6 +126,7 @@ void Bytecodes::bc_newarray() {
     context.setPendingSystemExceptionReason(5); // SystemException.NO_RESOURCE
     throw Exceptions::SystemException;
   }
+  context.noteTransactionAllocation(array_ref);
   stack.push_Reference(array_ref);
 
   return;
@@ -192,6 +193,7 @@ void Bytecodes::bc_anewarray() {
     context.setPendingSystemExceptionReason(5); // SystemException.NO_RESOURCE
     throw Exceptions::SystemException;
   }
+  context.noteTransactionAllocation(array_ref);
   stack.push_Reference(array_ref);
 
   return;

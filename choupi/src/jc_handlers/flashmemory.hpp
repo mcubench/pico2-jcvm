@@ -160,6 +160,22 @@ public:
   static bool persistentWriteRecoveryRequired() noexcept;
   static bool appletWriteTransactionActive() noexcept;
   static bool abortAppletWriteTransaction() noexcept;
+  /// RAM-resident (not yet promoted) persistent objects are not covered by
+  /// the record snapshots. Their first change in an applet transaction saves
+  /// their RAM contents here; abort restores them (JCRE 7.6, 7.7).
+  using VolatileRestore = void (*)(void *object, const std::vector<uint8_t> &);
+  /// Saved contents of `object` in the active applet transaction, or nullptr.
+  static std::vector<uint8_t> *findVolatileUndo(const void *object) noexcept;
+  /// True when `object` must be saved before its first transactional change.
+  static bool needsVolatileUndo(const void *object) noexcept;
+  /// Save `contents` for `object` until the transaction ends.
+  static void addVolatileUndo(void *object, VolatileRestore restore,
+                              std::vector<uint8_t> contents);
+  /// Drop the saved contents of an object that is being destroyed.
+  static void forgetVolatileUndo(const void *object) noexcept;
+  /// Called when an applet transaction ends, after persistent and RAM state
+  /// were restored on abort, so references to its new objects can be nulled.
+  static void setAppletTransactionEndHook(void (*hook)(bool aborted)) noexcept;
   /// Java Card commit buffer size, saturated at the positive short limit.
   static uint16_t maxCommitCapacity() noexcept;
   /// Remaining budget for persistent payload snapshots and journal metadata.

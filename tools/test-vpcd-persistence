@@ -60,7 +60,7 @@ PICO2_HEAP_GC=1 "${repo_root}/tools/env" python3 \
   --memory "${memory_image}" --log "${restore_emulator_log}" 2>&1 | \
   tee "${restore_log}"
 
-expected_passes=$(( 11 + gc_pressure_rounds * 7 ))
+expected_passes=$(( 11 + gc_pressure_rounds * 8 ))
 grep -Fq "TEST:SUMMARY pass=${expected_passes} fail=0" "${restore_log}" || \
   die "restored applet field/reference assertions did not all pass"
 printf 'PERSISTENCE:PASS emulator_process_restart gc_rounds=%s install_log=%s restore_log=%s\n' \

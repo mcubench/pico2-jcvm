@@ -923,6 +923,8 @@ void Bytecodes::bc_invokestatic() {
         intercept_util_non_atomic = 1; // arrayCopyNonAtomic
       if (method_token == 3)
         intercept_util_non_atomic = 2; // arrayFillNonAtomic
+      if (method_token == 4)
+        intercept_util_non_atomic = 3; // arrayCompare
     }
     bool trace_security_call = false;
 #ifndef PC_VERSION
@@ -1015,9 +1017,47 @@ void Bytecodes::bc_invokestatic() {
   if (intercept_util_non_atomic != 0) {
     Context::getActiveContext().resetSensitiveResult();
     const uint8_t expected_arguments =
-        intercept_util_non_atomic == 1 ? 5 : 4;
+        intercept_util_non_atomic == 2 ? 4 : 5;
     if (method_handler.getArgumentCount(method_offset) != expected_arguments) {
       throw Exceptions::SecurityException;
+    }
+    if (intercept_util_non_atomic == 3) {
+      // The ROM loop skips null and range checks when length <= 0.
+      const jshort_t length = stack.pop_Short();
+      const jshort_t destination_offset = stack.pop_Short();
+      const jref_t destination_ref = stack.pop_Reference();
+      const jshort_t source_offset = stack.pop_Short();
+      const jref_t source_ref = stack.pop_Reference();
+      if (source_ref.isNullPointer() || destination_ref.isNullPointer()) {
+        throw Exceptions::NullPointerException;
+      }
+      auto &heap = Context::getActiveContext().getHeap();
+      auto source = heap.getArray(source_ref);
+      auto destination = heap.getArray(destination_ref);
+      if (source->getType() != JAVA_ARRAY_T_BYTE ||
+          destination->getType() != JAVA_ARRAY_T_BYTE) {
+        throw Exceptions::ArrayStoreException;
+      }
+      for (const auto &[array, offset] :
+           {std::pair{source.get(), source_offset},
+            std::pair{destination.get(), destination_offset}}) {
+        if (offset < 0 || length < 0 ||
+            static_cast<uint32_t>(offset) + static_cast<uint32_t>(length) >
+                array->size()) {
+          throw Exceptions::ArrayIndexOutOfBoundsException;
+        }
+      }
+      jbyte_t result = 0;
+      for (jshort_t index = 0; index < length && result == 0; ++index) {
+        const jbyte_t left =
+            source->getByteEntry(static_cast<uint16_t>(source_offset + index));
+        const jbyte_t right = destination->getByteEntry(
+            static_cast<uint16_t>(destination_offset + index));
+        if (left != right) result = left < right ? -1 : 1;
+      }
+      Context::getActiveContext().setSensitiveResultShort(result);
+      stack.push_Byte(result);
+      return;
     }
     if (intercept_util_non_atomic == 1) {
       const jshort_t length = stack.pop_Short();

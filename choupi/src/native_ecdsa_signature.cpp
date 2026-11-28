@@ -42,6 +42,8 @@ constexpr uint8_t kSign = 1;
 constexpr uint8_t kVerify = 2;
 constexpr uint8_t kEcFpPublic = 11;
 constexpr uint8_t kEcFpPrivate = 12;
+constexpr uint8_t kEcFpPrivateTransientReset = 30;
+constexpr uint8_t kEcFpPrivateTransientDeselect = 31;
 
 struct ScopedGroup {
   mbedtls_ecp_group value;
@@ -294,7 +296,8 @@ void initializeEcdsaSignature(JC_Instance &signature, jref_t keyRef,
   auto key = object(keyRef);
   const uint8_t type = static_cast<uint8_t>(key->getField_Byte(
       ROM_FIELD_INDEX_JAVACARD_SECURITY_NATIVEKEY_NATIVEKEY_TYPE));
-  const bool signing = type == kEcFpPrivate;
+  const bool signing = type == kEcFpPrivate || type == kEcFpPrivateTransientReset ||
+                       type == kEcFpPrivateTransientDeselect;
   if ((mode == kSign && !signing) || (mode == kVerify && type != kEcFpPublic)) {
     throwCryptoException(CryptoExceptionReason::IllegalValue);
   }

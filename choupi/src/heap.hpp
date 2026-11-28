@@ -222,6 +222,10 @@ public:
   jref_t addTransientArrayResult(const JC_Array &array);
   /// Clear transient arrays associated with a lifecycle event.
   void clearTransientArrays(ClearEvent event);
+  /// Null entries equal to `reference` in this heap's transient arrays.
+  void nullTransientReferences(jref_t reference) noexcept;
+  /// Whether `instance` is a JCRE-owned runtime exception object.
+  bool isRuntimeExceptionObject(const JC_Instance *instance) const noexcept;
   /// Adding new instance in the transient heap.
   /// enforce_reserve=false only for runtime-owned exception instances, which
   /// must be creatable while the Java allocation reserve is refusing others.

@@ -1264,6 +1264,22 @@ choupi::vpcd::CardCallbacks::RestoreStatus vpcd_restore_applet(
 
 uint16_t vpcd_select_applet(void *) { return choupi_vm_select_applet(); }
 
+bool vpcd_applet_exists(void *, const uint8_t *aid, const uint8_t aid_length) {
+  // Recover interrupted installs first, as restore does, so a fresh process
+  // sees its applets. On a recovery failure (or the test hook that skips
+  // recovery) let restore report the error instead.
+  const char *skip_recovery =
+      std::getenv("CHOUPI_TEST_SKIP_INSTALL_RECOVERY_ONCE");
+  if ((skip_recovery != nullptr && skip_recovery[0] == '1') ||
+      !vpcd_cap_load_session.recoverPendingInstalls()) {
+    return true;
+  }
+  uint8_t package_id = 0xff;
+  uint16_t install_offset = 0xffff;
+  return choupi_vm_find_applet(aid, aid_length, &package_id, &install_offset) ==
+         0;
+}
+
 uint16_t vpcd_deselect_applet(void *, const bool selecting_same_applet) {
   return choupi_vm_deselect_applet(selecting_same_applet ? 1 : 0);
 }
@@ -1790,7 +1806,7 @@ int run_vpcd_transport() {
   const choupi::vpcd::CardCallbacks callbacks{
       nullptr, vpcd_clear_applet, vpcd_restore_applet, vpcd_select_applet,
       vpcd_deselect_applet, vpcd_process_apdu, vpcd_process_card_manager,
-      vpcd_reset_card_manager};
+      vpcd_reset_card_manager, vpcd_applet_exists};
   choupi::vpcd::Session session(callbacks);
   std::vector<uint8_t> message;
   std::vector<uint8_t> response;

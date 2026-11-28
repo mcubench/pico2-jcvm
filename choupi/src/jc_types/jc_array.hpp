@@ -132,6 +132,8 @@ public:
 
   /// Default destructor
   ~JC_Array() noexcept;
+  /// Save RAM contents before the first change in an applet transaction.
+  void snapshotVolatileContents();
 
   /// Get array type
   jc_array_type getType() const noexcept;
@@ -254,6 +256,8 @@ public:
   const ClearEvent getClearEvent() const noexcept;
   /// Zero the contents of a transient array.
   void clearTransientData();
+  /// Null local entries equal to `reference` in a transient reference array.
+  void nullTransientReferenceEntries(jref_t reference) noexcept;
 };
 
 } // namespace jcvm

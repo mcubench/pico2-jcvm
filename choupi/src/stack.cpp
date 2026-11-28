@@ -185,6 +185,22 @@ bool Stack::empty() noexcept { return this->frames.empty(); }
 
 bool Stack::isRootFrame() const noexcept { return this->frames.size() == 1; }
 
+void Stack::nullReference(const jref_t reference,
+                          const uint8_t package_owner) noexcept {
+  // Scan every slot: nulling a dead slot above the top is harmless.
+  for (jword_t *slot = this->jc_stack; slot < this->jc_stack + JCVM_STACK_SIZE;
+       ++slot) {
+    if (this->getValueKind(slot) != ValueKind::Reference ||
+        static_cast<uint16_t>(*slot) != reference.compact()) {
+      continue;
+    }
+    uint8_t &owner = this->jc_stack_reference_owners[slot - this->jc_stack];
+    if (owner != kCurrentReferenceOwner && owner != package_owner) continue;
+    *slot = 0;
+    owner = kGlobalReferenceOwner;
+  }
+}
+
 void Stack::setRootReturnValue(const uint32_t value) noexcept {
   this->setRootReturnValue(value, ReturnKind::Short);
 }
