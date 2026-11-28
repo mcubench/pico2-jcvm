@@ -34869,3 +34869,14 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: All 15 review regressions pass in VPCD and on EE11. Flash traffic during the monitored physical run (46 `CHOUPI:FS_APDU` lines): sync_bytes=225280, journal_bytes=2816; no baseline comparison was made. The RAM undo copies write no flash and are not charged to the commit capacity (the JCRE writes RAM exception objects while reporting BUFFER_FULL). Not run or not passing for unrelated reasons: `test-gp-get-data-vpcd` needs `pcsc_scan` (forbidden); `test-jcalgtest-support-vpcd` stops on `applet_version_mismatch` (CAP 1.8.5 vs reference 1.8.4); `test-rmi-client-vpcd` and `test-cap-interface-index-vpcd` fail to compile `inspect_remote_methods.cpp` (`getSize()` signature); `test-rmi-arrays-vpcd` fails in its baseline-profile ARM build (unused PQC functions in `native_pqc.cpp`). None of these files changed in this step.
 - Decision: Known limits, marked `shortcut:` in code: an object promoted to flash later in the same transaction is left to record rollback; `makeTransient*` and native `buildKey` allocations are not nulled on abort; references copied into another context's stack are not nulled. Open review items: #1–#4, #8–#13, #17, #19–#21, #25, #27, #28, B, C, plus #16's `00 CB` routing.
 - Artifacts/logs: `build/review-fix-suites/`, `build/fix-physical-ee11*.log`, `build/fix-physical-ee11-serial.log`, `artifacts/logs/jcsystem-transaction-physical-20261128T103849Z.log`.
+
+## 2026-11-28 Shorten diagnostic review guidance 1 min
+
+- Step-Id: `20261128-1141-shorten-diagnostics-checklist`
+- Task: Keep the migration plan in docs and make the standing AGENTS.md checklist concise.
+- When: '2026-11-28 11:41' - '2026-11-28 11:42' CET
+- Model: `gpt-6`
+- Change: Condensed the review guidance to two checks and linked the existing migration plan. Updated the plan to account for the trace guards landed in `ac50e0aa`.
+- Validation: Checked the cross-links, source revision, and staged whitespace. Documentation only.
+- Result: Detailed procedures remain in the plan and audit. No firmware work or hardware access.
+- Artifacts/logs: `docs/diagnostics-migration-plan.md`, `AGENTS.md`

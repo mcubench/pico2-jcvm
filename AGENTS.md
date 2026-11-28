@@ -170,26 +170,11 @@ before acceptance.
 
 ### Development code and release review
 
-Use [the diagnostics migration plan](docs/diagnostics-migration-plan.md) for
-the proposed switch names and rollout. Apply the following checks to new
-runtime diagnostics, test hooks, build changes and release artifacts.
-
-- Identify the purpose of added code that observes or alters runtime behavior.
-  Put debug reporting under telemetry, measurement-only code under profiling,
-  and fault injection or forced behavior under test hooks. Use platform
-  selectors such as `PC_VERSION` for platform behavior.
-- Follow every diagnostic from collection to delivery. Check buffers, counters,
-  timers, retained registers, serial output, APDU payloads and package contents.
-  Compile out development-only work with its output in normal builds. Keep
-  required protocol, safety, recovery and resource checks active.
-- Check every affected test or campaign consumer. Preserve valid normal-image
-  evidence and record agreed changes to documented telemetry interfaces. Follow
-  the product invariant process if a measurement requirement conflicts with
-  INV-24 or INV-27.
-- Check effective build options, including reused cache values and linked
-  dependencies, against provenance. Inspect loadable bytes in the exact
-  release UF2. Use the link map or behavior tests for hooks without strings.
-  Apply the separate normal-image hardware acceptance requirements above.
+- Classify development code as telemetry, profiling, or test hooks. Reserve
+  `PC_VERSION` for platform selection.
+- Verify normal builds omit diagnostic collection and output. Preserve runtime
+  checks and acceptance evidence. Check effective flags and the exact release UF2.
+  See the [diagnostics migration plan](docs/diagnostics-migration-plan.md).
 
 ### Long simulator/emulator runs (user directive 2026-11-14)
 Long VPCD/simulator runs are permitted. This replaces the earlier "stop long emulator runs" instruction. Each long run must have a stated reason and an expected benefit. Before starting one, think first:

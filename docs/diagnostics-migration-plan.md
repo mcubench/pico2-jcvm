@@ -2,6 +2,11 @@
 
 Status: proposed, 2026-11-28. The [source and artifact audit](debugging_code_20261128.md) records the baseline and repeatable searches. The standing review checks live in [AGENTS.md](../AGENTS.md#development-code-and-release-review). [SPEC.md](../SPEC.md#5-builds-identity-and-evidence) governs build modes and acceptance.
 
+Commit `ac50e0aa` gated VM exception, VM progress and SELECT traces with
+`CHOUPI_DEBUG_CCID_APPLET` and recorded a passing normal-image trace check.
+Carry those guards into the telemetry switch. The audit describes the older
+artifact and the remaining review categories.
+
 ## Target configuration
 
 | CMake option | Scope | Default |
