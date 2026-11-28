@@ -52,4 +52,11 @@ public interface Probe extends Shareable {
   short rejectIncompatibleShareableReference(Object value);
   short clearRetainedForeignReferences();
   short inspectForeignOneShot(Object value);
+  // Review findings (docs/review_claude_20261127.md).
+  short readRegistryArray();
+  boolean registryIsEmpty();
+  short touchDeselectTransient();
+  short throwIso(short reason);
+  short raiseVmArrayIndex();
+  short raiseNativeCrypto();
 }

@@ -92,6 +92,19 @@ int main() {
         "secure-channel GET RESPONSE stays on manager path");
   check(route_ccid_apdu(nullptr, 5, true, false) == CcidApduRoute::Invalid,
         "null APDU input is invalid");
-  std::puts("TEST:SUMMARY pass=17 fail=0");
+  // Review finding #16: ISO GET DATA belongs to the selected applet; the
+  // card manager answers it only while no applet is selected.
+  constexpr std::array<uint8_t, 5> iso_get_data = {
+      0x00, 0xcb, 0x3f, 0xff, 0x00};
+  check(route_ccid_apdu(iso_get_data.data(), iso_get_data.size(), true,
+                        false) == CcidApduRoute::PublicCardManager,
+        "ISO GET DATA without a selected applet stays with the card manager");
+  // Red until #16 is fixed; tools/test-review-regressions sets the variable.
+  if (std::getenv("CCID_ROUTE_REVIEW_CASES") != nullptr) {
+    check(route_ccid_apdu(iso_get_data.data(), iso_get_data.size(), true,
+                          true) == CcidApduRoute::Applet,
+          "ISO GET DATA reaches the selected applet");
+  }
+  std::puts("TEST:SUMMARY pass=18 fail=0");
   return 0;
 }

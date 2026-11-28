@@ -1289,6 +1289,33 @@ def main() -> int:
             print("TEST:PASS installed cross-AID service applet")
             install(scp, client)
             print("TEST:PASS installed cross-AID client applet")
+            if os.environ.get("SIO_CROSS_AID_REVIEW_CASES") == "1":
+                # Open findings of docs/review_claude_20261127.md; they fail
+                # until fixed. Report every case, then fail if any failed.
+                select_client = bytes((0x00, 0xA4, 0x04, 0x00,
+                                       len(CLIENT_APPLET))) + CLIENT_APPLET
+                vpcd.exchange(connection, select_client, "SELECT client for review cases")
+                review_cases = (
+                    ("8070000000", "71019000",
+                     "#1 library static keeps the client owner for a service read"),
+                    ("8071000000", "73019000",
+                     "#19 service sees the client's later library static write"),
+                    ("8073000000", "72009000",
+                     "#9 service cannot touch its CLEAR_ON_DESELECT array while the client is selected"),
+                    ("8074000000", "75009000",
+                     "#10/B ISOException 6A88 and 9000, VM AIOOBE and native CryptoException cross SIO unchanged"),
+                )
+                failed = 0
+                for command, expected, label in review_cases:
+                    response = vpcd.exchange(connection, bytes.fromhex(command), label)
+                    if response.hex().upper() == expected:
+                        print(f"TEST:PASS {label}")
+                    else:
+                        failed += 1
+                        print(f"TEST:FAIL {label}: got {response.hex().upper()}, "
+                              f"expected {expected}")
+                print(f"TEST:SUMMARY pass={len(review_cases) - failed} fail={failed}")
+                return 1 if failed else 0
             if os.environ.get("SIO_CROSS_AID_DUPX_TEST") == "1":
                 select_client = bytes((0x00, 0xA4, 0x04, 0x00,
                                        len(CLIENT_APPLET))) + CLIENT_APPLET

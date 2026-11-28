@@ -27,6 +27,7 @@ import javacard.security.HMACKey;
 import javacard.security.KeyBuilder;
 import javacard.security.RandomData;
 import javacard.security.Signature;
+import javacardx.crypto.AEADCipher;
 import javacardx.crypto.Cipher;
 import javacardx.framework.util.ArrayLogic;
 import javacardx.framework.util.UtilException;
@@ -68,6 +69,18 @@ public final class JCTransactionProbe extends Applet {
   private byte selectDeselectTransientResult;
   private byte rejectNextSelect;
   private HMACKey replacementProbeKey;
+  // Open review findings (docs/review_claude_20261127.md), cases 147-158.
+  private static byte[] installArgumentStore;
+  private static byte installArgumentStoreRejected;
+  private static byte[] staticApduBuffer;
+  private Object apduBufferField;
+  private Object apduObjectField;
+  private Object[] apduStoreArray;
+  private byte installTransactionBeforeRegister;
+  private byte installTransactionAfterRegister;
+  private Cipher deselectKeyCipher;
+  private Cipher reinitializedCipher;
+  private byte[] cipherReference;
   private byte beginTransactionOnNextSelect;
   private byte beginTransactionOnNextDeselect;
   private byte currentApduHiddenOutsideProcess;
@@ -102,6 +115,7 @@ public final class JCTransactionProbe extends Applet {
     transactionCapacityArray = allocateCapacityArray ? new byte[32767] : new byte[1];
     installSawAIDNullBeforeRegister =
         JCSystem.getAID() == null ? (byte)1 : (byte)0;
+    installTransactionBeforeRegister = installTransactionProbe();
     if (explicitAID) {
       try {
         register(requestedAID, offset, length);
@@ -114,6 +128,7 @@ public final class JCTransactionProbe extends Applet {
     }
     installSawAppletActive =
         JCSystem.isAppletActive(JCSystem.getAID()) ? (byte)1 : (byte)0;
+    installTransactionAfterRegister = installTransactionProbe();
     staticReferenceRoot = this;
     byte[] shared = {0x01};
     persistentReferenceArray = new Object[257];
@@ -129,6 +144,13 @@ public final class JCTransactionProbe extends Applet {
   }
 
   public static void install(byte[] bArray, short bOffset, byte bLength) {
+    // Finding #2: the install argument is a JCRE global array.
+    try {
+      installArgumentStore = bArray;
+    } catch (SecurityException expected) {
+      installArgumentStoreRejected = 1;
+    }
+    installArgumentStore = null;
     if (bLength == 10) {
       new JCTransactionProbe(bArray, bOffset, bLength);
     } else if ((bLength == 1 && bArray[bOffset] == (byte)0x7f) ||
@@ -280,6 +302,65 @@ public final class JCTransactionProbe extends Applet {
     return 0;
   }
 
+  // Finding #8: 1 when begin/commit run without exception and, after
+  // register(), open a real applet transaction; 0x10|reason on failure.
+  private static byte installTransactionProbe() {
+    try {
+      JCSystem.beginTransaction();
+      byte depth = JCSystem.getTransactionDepth();
+      JCSystem.commitTransaction();
+      return depth == 1 || JCSystem.getAID() == null ? (byte)1 : (byte)0x20;
+    } catch (TransactionException failure) {
+      return (byte)(0x10 | failure.getReason());
+    }
+  }
+
+  // Finding #21: an applet-defined ISOException subclass.
+  static final class ProbeISOException extends ISOException {
+    ProbeISOException(short sw) {
+      super(sw);
+    }
+  }
+
+  // Finding #27: the build replaces the checkcast with nops, so athrow gets
+  // an object that is not Throwable.
+  private static void throwNonThrowable(Object value) {
+    throw (RuntimeException)value;
+  }
+
+  private static AESKey aesKey(byte type, byte fill) {
+    AESKey key = (AESKey)KeyBuilder.buildKey(type, KeyBuilder.LENGTH_AES_128, false);
+    byte[] bytes = new byte[16];
+    Util.arrayFillNonAtomic(bytes, (short)0, (short)16, fill);
+    key.setKey(bytes, (short)0);
+    return key;
+  }
+
+  private static boolean sameBytes(byte[] left, byte[] right, short length) {
+    return Util.arrayCompare(left, (short)0, right, (short)0, length) == 0;
+  }
+
+  // Finding #13: GCM with no IV equals an explicit zero IV, and doFinal
+  // resets to the initialized state. Returns 1 when both hold.
+  private static byte gcmResetProbe() {
+    AESKey key = aesKey(KeyBuilder.TYPE_AES, (byte)0x2B);
+    AEADCipher gcm = (AEADCipher)Cipher.getInstance(AEADCipher.ALG_AES_GCM, false);
+    byte[] zero = new byte[16];
+    byte[] first = new byte[32];
+    byte[] second = new byte[32];
+    byte[] third = new byte[32];
+    gcm.init(key, Cipher.MODE_ENCRYPT);
+    gcm.doFinal(zero, (short)0, (short)16, first, (short)0);
+    gcm.retrieveTag(first, (short)16, (short)16);
+    gcm.doFinal(zero, (short)0, (short)16, second, (short)0);
+    gcm.retrieveTag(second, (short)16, (short)16);
+    gcm.init(key, Cipher.MODE_ENCRYPT, new byte[12], (short)0, (short)12);
+    gcm.doFinal(zero, (short)0, (short)16, third, (short)0);
+    gcm.retrieveTag(third, (short)16, (short)16);
+    return sameBytes(first, second, (short)32) && sameBytes(first, third, (short)32)
+        ? (byte)1 : (byte)0;
+  }
+
   public void process(APDU apdu) throws ISOException {
     if (selectingApplet()) {
       if (oneShotSelectProbe == 1) {
@@ -300,6 +381,11 @@ public final class JCTransactionProbe extends Applet {
       switch (buffer[ISO7816.OFFSET_INS]) {
         case (byte)0xa4:
           ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
+          return;
+        case (byte)0xcb:
+          // Finding #16: 00 CB is an ordinary command for the selected applet.
+          buffer[0] = 0x43;
+          apdu.setOutgoingAndSend((short)0, (short)1);
           return;
         case (byte)0xc0:
           buffer[0] = 0x42;
@@ -2033,6 +2119,113 @@ public final class JCTransactionProbe extends Applet {
         replacementProbeKey.clearKey();
         replacementProbeKey = null;
         length = 14;
+        break;
+      }
+      case (byte)147: {
+        // Finding #2: the APDU buffer and APDU object are JCRE temporary
+        // objects; storing them in a field, array or static is refused.
+        byte rejected = 0;
+        if (apduStoreArray == null) apduStoreArray = new Object[1];
+        try { apduBufferField = buffer; } catch (SecurityException e) { rejected |= 1; }
+        try { apduStoreArray[0] = buffer; } catch (SecurityException e) { rejected |= 2; }
+        try { staticApduBuffer = buffer; } catch (SecurityException e) { rejected |= 4; }
+        try { apduObjectField = apdu; } catch (SecurityException e) { rejected |= 8; }
+        apduBufferField = null;
+        apduStoreArray[0] = null;
+        staticApduBuffer = null;
+        apduObjectField = null;
+        buffer[0] = rejected;
+        break;
+      }
+      case (byte)148:
+        buffer[0] = installArgumentStoreRejected;
+        break;
+      case (byte)149:
+        buffer[0] = installTransactionBeforeRegister;
+        buffer[1] = installTransactionAfterRegister;
+        length = 2;
+        break;
+      case (byte)150: {
+        // Finding #12, part 1: a CLEAR_ON_DESELECT key must not keep working
+        // through the Cipher after deselect (case 151 after reselection).
+        // The first init creates a CLEAR_ON_RESET workspace that the
+        // same-size deselect key would reuse.
+        deselectKeyCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+        deselectKeyCipher.init(aesKey(KeyBuilder.TYPE_AES_TRANSIENT_RESET, (byte)0x10),
+            Cipher.MODE_ENCRYPT);
+        deselectKeyCipher.init(aesKey(KeyBuilder.TYPE_AES_TRANSIENT_DESELECT, (byte)0x11),
+            Cipher.MODE_ENCRYPT);
+        cipherReference = new byte[16];
+        deselectKeyCipher.doFinal(new byte[16], (short)0, (short)16, cipherReference, (short)0);
+        buffer[0] = 1;
+        break;
+      }
+      case (byte)151: {
+        byte result = 1;
+        try {
+          byte[] output = new byte[16];
+          deselectKeyCipher.doFinal(new byte[16], (short)0, (short)16, output, (short)0);
+          if (sameBytes(output, cipherReference, (short)16)) result = 2;
+        } catch (CryptoException expected) {
+          result = 1;
+        }
+        buffer[0] = result;
+        break;
+      }
+      case (byte)152: {
+        // Finding #12, part 2: re-initializing with a CLEAR_ON_RESET key of
+        // the same size must keep working after deselect (case 153).
+        reinitializedCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+        reinitializedCipher.init(aesKey(KeyBuilder.TYPE_AES_TRANSIENT_DESELECT, (byte)0x22),
+            Cipher.MODE_ENCRYPT);
+        reinitializedCipher.init(aesKey(KeyBuilder.TYPE_AES_TRANSIENT_RESET, (byte)0x33),
+            Cipher.MODE_ENCRYPT);
+        cipherReference = new byte[16];
+        reinitializedCipher.doFinal(new byte[16], (short)0, (short)16, cipherReference, (short)0);
+        buffer[0] = 1;
+        break;
+      }
+      case (byte)153: {
+        byte result = 2;
+        try {
+          byte[] output = new byte[16];
+          reinitializedCipher.doFinal(new byte[16], (short)0, (short)16, output, (short)0);
+          if (sameBytes(output, cipherReference, (short)16)) result = 1;
+        } catch (CryptoException unexpected) {
+          result = 3;
+        }
+        buffer[0] = result;
+        break;
+      }
+      case (byte)154:
+        buffer[0] = gcmResetProbe();
+        break;
+      case (byte)156:
+        throw new ProbeISOException((short)0x6A88);
+      case (byte)157: {
+        // Finding #25: uncaught VM-raised exceptions end with 6F00 and leave
+        // the card responsive. P2 selects the exception.
+        byte zero = (byte)(buffer[ISO7816.OFFSET_P2] - buffer[ISO7816.OFFSET_P2]);
+        switch (buffer[ISO7816.OFFSET_P2]) {
+          case 0: { byte[] missing = null; buffer[0] = missing[zero]; break; }
+          case 1: buffer[0] = (byte)(1 / zero); break;
+          case 2: buffer[0] = buffer[(short)(zero + 300)]; break;
+          case 3: { Object value = buffer; buffer[0] = ((AID)value).getPartialBytes(
+              (short)0, buffer, (short)0, (byte)1); break; }
+          default: buffer[0] = (byte)new byte[(short)(zero - 1)].length; break;
+        }
+        break;
+      }
+      case (byte)158: {
+        byte result = 3;
+        try {
+          throwNonThrowable(this);
+        } catch (SecurityException expected) {
+          result = 0;
+        } catch (RuntimeException wrong) {
+          result = 1;
+        }
+        buffer[0] = result;
         break;
       }
       case 56: {

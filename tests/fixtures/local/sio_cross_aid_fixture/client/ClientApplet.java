@@ -2,6 +2,7 @@ package sio.client;
 
 import javacard.framework.AID;
 import javacard.framework.APDU;
+import javacard.framework.ISOException;
 import javacard.framework.Applet;
 import javacard.framework.JCSystem;
 import javacard.framework.Shareable;
@@ -9,6 +10,7 @@ import javacard.framework.SystemException;
 import javacard.security.CryptoException;
 import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
+import sio.contract.Registry;
 
 public final class ClientApplet extends Applet {
   private static final byte[] SERVICE_AID = {
@@ -217,6 +219,51 @@ public final class ClientApplet extends Applet {
     }
   }
 
+  // Review findings (docs/review_claude_20261127.md), INS 0x70, 0x71, 0x73, 0x74.
+  private static byte exceptionCode(Probe probe, byte which) {
+    try {
+      if (which == 0) probe.throwIso((short) 0x6A88);
+      if (which == 1) probe.throwIso((short) 0x9000);
+      if (which == 2) probe.raiseVmArrayIndex();
+      if (which == 3) probe.raiseNativeCrypto();
+      return 1; // returned normally
+    } catch (ISOException iso) {
+      short expected = which == 0 ? (short) 0x6A88 : (short) 0x9000;
+      return which <= 1 && iso.getReason() == expected ? (byte) 0 : (byte) 2;
+    } catch (ArrayIndexOutOfBoundsException index) {
+      return which == 2 ? (byte) 0 : (byte) 2;
+    } catch (CryptoException crypto) {
+      return which == 3 && crypto.getReason() == CryptoException.NO_SUCH_ALGORITHM
+          ? (byte) 0 : (byte) 2;
+    } catch (SecurityException substituted) {
+      return 3;
+    } catch (RuntimeException other) {
+      return 2;
+    }
+  }
+
+  private static short reviewCase(byte ins, Probe probe) {
+    if (ins == 0x70) {
+      Registry.put(new byte[] {0x5C});
+      short result = probe.readRegistryArray();
+      Registry.put(null);
+      return result;
+    }
+    if (ins == 0x71) {
+      Registry.put(new byte[1]);
+      boolean filled = probe.registryIsEmpty();
+      Registry.put(null);
+      boolean cleared = probe.registryIsEmpty();
+      return (short) (0x7300 | (filled ? 2 : 0) | (cleared ? 1 : 0));
+    }
+    if (ins == 0x73) return probe.touchDeselectTransient();
+    short codes = 0x7500;
+    for (byte which = 0; which < 4; which++) {
+      codes |= (short) (exceptionCode(probe, which) << (2 * (3 - which)));
+    }
+    return codes;
+  }
+
   public void process(APDU apdu) {
     if (selectingApplet()) {
       return;
@@ -272,6 +319,16 @@ public final class ClientApplet extends Applet {
     }
     if (buffer[1] == 0x3C) {
       short result = checkSensitiveJCSystemResults();
+      buffer[0] = (byte) (result >> 8);
+      buffer[1] = (byte) result;
+      apdu.setOutgoingAndSend((short) 0, (short) 2);
+      return;
+    }
+    if (buffer[1] >= 0x70 && buffer[1] <= 0x74) {
+      Probe probe = (Probe) JCSystem.getAppletShareableInterfaceObject(
+          JCSystem.lookupAID(SERVICE_AID, (short) 0, (byte) SERVICE_AID.length),
+          (byte) 0x5A);
+      short result = reviewCase(buffer[1], probe);
       buffer[0] = (byte) (result >> 8);
       buffer[1] = (byte) result;
       apdu.setOutgoingAndSend((short) 0, (short) 2);

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+build_dir="${repo_root}/build/tests/unit/cap-static-field"
+
+"${repo_root}/tools/env" cmake \
+  -S "${repo_root}/tests/unit/cap_static_field" \
+  -B "${build_dir}"
+"${repo_root}/tools/env" cmake --build "${build_dir}" \
+  --target cap_static_field_test
+ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+  "${build_dir}/cap_static_field_test"

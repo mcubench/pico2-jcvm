@@ -53,7 +53,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--log", type=Path)
     parser.add_argument(
-        "--case", type=int, action="append", choices=range(1, 147),
+        "--case", type=int, action="append", choices=range(1, 159),
         help="run only this numbered APDU case; may be repeated",
     )
     parser.add_argument(
@@ -85,6 +85,10 @@ def main() -> int:
     parser.add_argument(
         "--package-id", type=int, choices=range(56, 64), default=56,
         help="dynamic package ID to use while restoring an installed applet",
+    )
+    parser.add_argument(
+        "--class-index", type=int, default=0,
+        help="applet class index to restore with --restore-existing",
     )
     parser.add_argument(
         "--expect-register-reason", type=int, choices=(0, 1, 4), default=0,
@@ -133,7 +137,7 @@ def main() -> int:
         ]
         if args.restore_existing:
             command.extend((
-                "--restore-applet", str(args.package_id), "0", AID.hex(),
+                "--restore-applet", str(args.package_id), str(args.class_index), AID.hex(),
                 AID.hex(), str(cap_code),
             ))
         else:
@@ -355,7 +359,22 @@ def main() -> int:
                     (145, b"\x00", "ECDSA accepts an initialized transient EC private key"),
                     (146, bytes.fromhex("0105020304050606010203040506"),
                      "HMAC length replacement reuses storage and rolls back key bytes"),
+                    (154, b"\x01", "GCM no-IV init equals a zero IV and doFinal resets"),
+                    (155, b"\x43", "00 CB reaches the selected applet"),
+                    (157, b"", "uncaught VM-raised exceptions return 6F00 and the card stays usable"),
                 )
+                if args.case:
+                    # Open findings of docs/review_claude_20261127.md. They
+                    # fail until fixed; tools/test-review-regressions runs them.
+                    cases += (
+                        (147, b"\x0f", "APDU buffer and APDU object stores are refused"),
+                        (148, b"\x01", "storing the install argument array is refused"),
+                        (149, b"\x01\x01", "INSTALL lets the applet begin and commit its own transaction"),
+                        (150, b"\x01", "Cipher stops using a CLEAR_ON_DESELECT key after deselect"),
+                        (152, b"\x01", "Cipher re-initialized with a CLEAR_ON_RESET key survives deselect"),
+                        (156, b"", "uncaught applet ISOException subclass keeps its status word"),
+                        (158, b"\x00", "athrow of a non-Throwable object raises SecurityException"),
+                    )
                 selected_cases = (
                     [case for case in cases if case[0] in args.case]
                     if args.case
@@ -484,6 +503,33 @@ def main() -> int:
                             raise RuntimeError(
                                 f"{label}: expected {expected.hex().upper()}, got {observed.hex().upper()}"
                             )
+                        print(f"TEST:PASS {label}")
+                        continue
+                    if p1 in (150, 152):
+                        exchange(connection, bytes((0x80, 0, p1, 0, 0)), label + " setup")
+                        exchange(connection, select, "reselect before " + label)
+                        data = exchange(connection, bytes((0x80, 0, p1 + 1, 0, 0)), label)
+                        if data != expected:
+                            raise RuntimeError(f"{label}: expected {expected.hex()}, got {data.hex()}")
+                        print(f"TEST:PASS {label}")
+                        continue
+                    if p1 == 155:
+                        data = exchange(connection, bytes.fromhex("00CB3FFF00"), label)
+                        if data != expected:
+                            raise RuntimeError(f"{label}: expected {expected.hex()}, got {data.hex()}")
+                        print(f"TEST:PASS {label}")
+                        continue
+                    if p1 == 156:
+                        exchange(connection, bytes((0x80, 0, p1, 0, 0)), label, b"\x6a\x88")
+                        print(f"TEST:PASS {label}")
+                        continue
+                    if p1 == 157:
+                        for kind in range(5):
+                            exchange(connection, bytes((0x80, 0, p1, kind, 0)),
+                                     f"{label} kind={kind}", b"\x6f\x00")
+                            if exchange(connection, bytes((0x80, 0, 40, 0, 0)),
+                                        "next APDU after uncaught exception") != b"\x01":
+                                raise RuntimeError(f"{label}: card unusable after kind={kind}")
                         print(f"TEST:PASS {label}")
                         continue
                     if p1 == 74:

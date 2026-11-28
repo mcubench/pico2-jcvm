@@ -38,24 +38,25 @@ CHOUPI_JCVM_DEBUG=OFF "${repo_root}/tools/build-pc" 2>&1 | tee "${build_log}"
   --case 6 --case 130 --timeout "${timeout_seconds}" --memory "${memory_image}" \
   --log "${install_emulator_log}" 2>&1 | tee "${install_log}"
 
-package_id="$(python3 - "${install_emulator_log}" <<'PY'
+read -r package_id class_index < <(python3 - "${install_emulator_log}" <<'PY'
 import re
 import sys
 
 text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-matches = re.findall(r"VPCD:APPLET_INSTALLED package-id=(\d+) class-index=", text)
+matches = re.findall(r"VPCD:APPLET_INSTALLED package-id=(\d+) class-index=(\d+)", text)
 if len(matches) != 1:
     raise SystemExit(f"expected one installed package ID in emulator log, found {matches}")
-print(matches[0])
+print(*matches[0])
 PY
-)"
-echo "VPCD:PERSISTENCE_PACKAGE_ID package=${package_id}"
+)
+[[ -n "${class_index:-}" ]] || die "installed applet class index not found in ${install_emulator_log}"
+echo "VPCD:PERSISTENCE_PACKAGE_ID package=${package_id} class_index=${class_index}"
 
 PICO2_HEAP_GC=1 "${repo_root}/tools/env" python3 \
   "${repo_root}/tests/integration/jcsystem_transaction_applet_test.py" \
   --case 14 --case 15 --case 16 --case 17 --case 58 --case 80 --case 81 --case 82 --case 131 \
   --gc-pressure-rounds "${gc_pressure_rounds}" \
-  --package-id "${package_id}" \
+  --package-id "${package_id}" --class-index "${class_index}" \
   --restore-existing --timeout "${timeout_seconds}" \
   --memory "${memory_image}" --log "${restore_emulator_log}" 2>&1 | \
   tee "${restore_log}"

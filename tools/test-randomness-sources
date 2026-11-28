@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Review findings #11 and C (docs/review_claude_20261127.md): security-relevant
+# randomness (keys, nonces, blinding, SCP03 challenges) must come from one
+# shared generator, so its entropy source can be assessed in one place.
+# Only native_random.cpp, which owns that generator, may call pico_rand, plus
+# the board smoke test that checks the hardware source itself.
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+allowed='^(choupi/src/native_random\.cpp|src/board_smoke\.c):'
+cd "${repo_root}"
+violations="$(grep -rnE '\bget_rand_(32|64|128)\b' choupi/src src \
+  --include='*.c' --include='*.cpp' --include='*.h' --include='*.hpp' |
+  grep -Ev "${allowed}" || true)"
+if [[ -n "${violations}" ]]; then
+  printf '%s\n' "${violations}"
+  printf 'TEST:FAIL pico_rand is called outside the shared random generator\n'
+  exit 1
+fi
+printf 'TEST:PASS pico_rand is called only by the shared random generator\n'

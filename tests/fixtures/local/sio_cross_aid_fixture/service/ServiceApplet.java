@@ -3,6 +3,7 @@ package sio.service;
 import javacard.framework.AID;
 import javacard.framework.APDU;
 import javacard.framework.Applet;
+import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
 import javacard.framework.OwnerPIN;
 import javacard.framework.OwnerPINBuilder;
@@ -22,6 +23,7 @@ import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 import javacardx.security.SensitiveResult;
 import sio.contract.Probe;
+import sio.contract.Registry;
 
 public final class ServiceApplet extends Applet implements Probe {
   private static final byte[] CLIENT_AID = {
@@ -40,11 +42,13 @@ public final class ServiceApplet extends Applet implements Probe {
   private ForeignReferenceHolder retainedForeignInstance;
   private Object[] retainedForeignArray;
   private static boolean installDeselectTransientAllowed;
+  private byte[] deselectTransient;
 
   private ServiceApplet() {
     try {
       byte[] transientBytes = JCSystem.makeTransientByteArray(
           (short) 1, JCSystem.CLEAR_ON_DESELECT);
+      deselectTransient = transientBytes;
       installDeselectTransientAllowed = transientBytes != null &&
           JCSystem.isTransient(transientBytes) == JCSystem.CLEAR_ON_DESELECT;
     } catch (SystemException rejected) {
@@ -607,6 +611,54 @@ public final class ServiceApplet extends Applet implements Probe {
     boolean valid = verifier.verify(input, (short)0, (short)input.length,
                                     mac, (short)0, macLength);
     return valid ? (short)0 : (short)1;
+  }
+
+  // #1: the client's array, stored in a library static from the client
+  // context, must stay behind the firewall when this context reads it.
+  public short readRegistryArray() {
+    Object value = Registry.get();
+    try {
+      return (short) (0x7100 | (((byte[]) value)[0] & 0x7F) | 0x80);
+    } catch (SecurityException expected) {
+      return (short) 0x7101;
+    } catch (NullPointerException missing) {
+      return (short) 0x7102;
+    } catch (ClassCastException wrongObject) {
+      return (short) 0x7103;
+    }
+  }
+
+  // #19: reads the library static after the client changed it.
+  public boolean registryIsEmpty() {
+    return Registry.isEmpty();
+  }
+
+  // #9: CLEAR_ON_DESELECT data is accessible only while this applet is the
+  // selected one; here the client is selected.
+  public short touchDeselectTransient() {
+    try {
+      deselectTransient[0] = 1;
+      return (short) 0x7201;
+    } catch (SecurityException expected) {
+      return (short) 0x7200;
+    }
+  }
+
+  // #10 and B: exceptions raised here must reach the client unchanged.
+  public short throwIso(short reason) {
+    ISOException.throwIt(reason);
+    return 0;
+  }
+
+  public short raiseVmArrayIndex() {
+    byte[] value = new byte[1];
+    value[(short) (value.length + 1)] = 0;
+    return 0;
+  }
+
+  public short raiseNativeCrypto() {
+    KeyBuilder.buildKey((byte) 0x7F, (short) 128, false);
+    return 0;
   }
 
   public short throwSecurityException() {

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Red regressions for the open findings in docs/review_claude_20261127.md.
+# Each check fails until its finding is fixed. XPASS means a fix landed: move
+# the check into its suite's default run and delete its line here.
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+log_dir="${repo_root}/build/review-regressions"
+mkdir -p "${log_dir}"
+"${repo_root}/tools/build-jcsystem-transaction-probe" >/dev/null
+"${repo_root}/tools/build-pc" --profile max_crypto > "${log_dir}/build-pc.log" 2>&1 ||
+  { echo "ERROR: max_crypto PC build failed; see ${log_dir}/build-pc.log" >&2; exit 1; }
+
+probe="python3 ${repo_root}/tests/integration/jcsystem_transaction_applet_test.py"
+# name|finding|command
+checks=(
+  "probe-147|#2|${probe} --case 147"
+  "probe-148|#2|${probe} --case 148"
+  "probe-149|#8|${probe} --case 149"
+  "probe-150|#12|${probe} --case 150"
+  "probe-152|#12|${probe} --case 152"
+  "probe-156|#21|${probe} --case 156"
+  "probe-158|#27|${probe} --case 158"
+  "sio-review|#1 #9 #10 #19 B|env SIO_CROSS_AID_REVIEW_CASES=1 ${repo_root}/tools/test-sio-cross-aid-vpcd"
+  "cap-package-method-ref|#3|${repo_root}/tools/test-cap-package-method-ref-vpcd"
+  "load-only-static|#17|${repo_root}/tools/test-load-only-static-vpcd"
+  "stack-frame-guards|#4 #25|${repo_root}/tools/test-stack-frame-guards"
+  "cap-static-field|#28|${repo_root}/tools/test-cap-static-field"
+  "ccid-apdu-route|#16|env CCID_ROUTE_REVIEW_CASES=1 ${repo_root}/tools/test-ccid-apdu-route"
+  "randomness-sources|#11 C|${repo_root}/tools/test-randomness-sources"
+)
+xpass=0
+for entry in "${checks[@]}"; do
+  IFS='|' read -r name finding command <<<"${entry}"
+  log="${log_dir}/${name}.log"
+  if timeout 1800 bash -c "${command}" > "${log}" 2>&1; then
+    printf 'TEST:XPASS %s finding=%s\n' "${name}" "${finding}"
+    xpass=$((xpass + 1))
+  else
+    printf 'TEST:XFAIL %s finding=%s %s\n' "${name}" "${finding}" \
+      "$(grep -m1 'TEST:FAIL' "${log}" | cut -c1-160 || echo 'no TEST:FAIL line')"
+  fi
+done
+printf 'TEST:SUMMARY checks=%s xpass=%s\n' "${#checks[@]}" "${xpass}"
+[[ "${xpass}" -eq 0 ]]

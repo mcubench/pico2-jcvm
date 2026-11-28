@@ -11,6 +11,8 @@ kit="$("${repo_root}/tools/fixture-path" toolchain.jc305)"
   printf 'ERROR: Java 8 runtime not found: %s\n' "${java8_home}" >&2
   exit 1
 }
+# Start clean: stale .class files would be converted into the CAP.
+rm -rf "${build_dir}/classes" "${build_dir}/output"
 mkdir -p "${build_dir}/classes" "${build_dir}/output"
 
 "${repo_root}/tools/env" "${java8_home}/bin/javac" \
@@ -29,6 +31,28 @@ mkdir -p "${build_dir}/classes" "${build_dir}/output"
   > "${build_dir}/build.log" 2>&1
 cp "${build_dir}/output/algtest/javacard/algtest.cap" \
   "${build_dir}/output/JCTransactionProbe.cap"
+# Review finding #27: turn "aload_0; checkcast; athrow" in throwNonThrowable
+# into "aload_0; nop x4; athrow" so athrow receives a non-Throwable object.
+python3 - "${build_dir}/output/JCTransactionProbe.cap" <<'PY'
+import re
+import shutil
+import sys
+from zipfile import ZIP_DEFLATED, ZipFile
+
+path = sys.argv[1]
+name = "algtest/javacard/Method.cap"
+with ZipFile(path) as cap:
+    entries = [(info, cap.read(info.filename)) for info in cap.infolist()]
+method = next(data for info, data in entries if info.filename == name)
+matches = [m.start() for m in re.finditer(rb"\x18\x94\x00..\x93", method, re.DOTALL)]
+if len(matches) != 1:
+    raise SystemExit(f"expected one checkcast-athrow pattern, found {len(matches)}")
+patched = method[:matches[0] + 1] + bytes(4) + method[matches[0] + 5:]
+with ZipFile(path + ".tmp", "w", ZIP_DEFLATED) as out:
+    for info, data in entries:
+        out.writestr(info, patched if info.filename == name else data)
+shutil.move(path + ".tmp", path)
+PY
 python3 - "${build_dir}/output/JCTransactionProbe.cap" \
   "${build_dir}/load-code.bin" <<'PY'
 import sys
