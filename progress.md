@@ -34834,3 +34834,15 @@ Validation note for this step: the byte-identical upstream CSV retains original 
 - Result: Tests only. No firmware change, no hardware run, no flash traffic measured. Case 146 checks key reuse through unchanged commit capacity, which is a proxy; its rollback bytes already pass. Not covered: #1, #2, #3, #4, #8–#13, #17, #19–#21, #25, #27, #28, B, C.
 - Decision: Fix the findings in priority order; each fix flips its case to XPASS. Until #6 and #18 are fixed, the unit and trace checks stay red on purpose.
 - Artifacts/logs: `build/review-regressions/`, `build/review-regressions-default-host.log`.
+
+## 2026-11-28 Development diagnostics audit 5 min
+
+- Step-Id: `20261128-0926-debugging-code-audit`
+- Task: Inventory development-only code and telemetry for production deployment (INV-24).
+- When: '2026-11-28 09:22' - '2026-11-28 09:27' CET
+- Model: `gpt-6`
+- Change: Added a nine-category checklist covering source emitters, runtime state, APDU diagnostics, diagnostic flags, test hooks, profile instrumentation and release artifacts. Documented search commands, test and campaign consumers, and functional paths to preserve.
+- Validation: Ran all ten documented search blocks and checked their local source links. The existing normal ARM max_crypto artifact from `69c62719` failed `./tools/test-no-debug-traces` as expected. Checked loadable ELF strings, the raw binary, and decoded UF2 flash payload offline. No fresh build, simulator, hardware or flash traffic measurement.
+- Result: Confirmed INV-24 trace strings in the existing UF2, SHA-256 `8a85c1f107ab06335fd72a43c8b071c3ac6cb32911294ab611cfcda62a8af706`. Identified two CMake debug switches outside provenance and APDU telemetry that needs source inspection in addition to string scans.
+- Decision: Documentation-only step. Follow-up can use the checklist against the exact candidate release and account for measurement consumers.
+- Artifacts/logs: `docs/debugging_code_20261128.md`

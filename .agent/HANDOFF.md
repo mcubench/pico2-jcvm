@@ -1,7 +1,15 @@
 # Handoff
 
-Updated 2026-11-27. See [TODO.md](../TODO.md) for active work and
+Updated 2026-11-28. See [TODO.md](../TODO.md) for active work and
 [EXT_REQUESTS.md](EXT_REQUESTS.md) for external dependencies.
+
+## Development diagnostics audit
+
+- [Audit checklist](../docs/debugging_code_20261128.md) covers nine categories.
+  Existing normal ARM max_crypto artifact from `69c62719` fails the INV-24
+  trace check. VM and SELECT strings are present in its UF2 flash payload.
+  Source, artifacts and package paths were inspected offline. No board state
+  was checked or changed.
 
 ## Current EE11 work
 
